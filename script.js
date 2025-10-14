@@ -6,6 +6,8 @@ const LLT_SYNONYM_HINTS = {
   '빈혈': ['피가 모자람', '피가 모자름', '피 부족', '피부족', '혈액 부족', '혈액부족'],
 };
 
+const MIN_OVERLAY_MS = 600;
+
 const dataset = {
   loaded: false,
   llt: [],
@@ -68,6 +70,10 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
 form.addEventListener('submit', (event) => {
   event.preventDefault();
   runSearch({ approximate: false });
@@ -98,10 +104,12 @@ async function runSearch({ approximate }) {
   const limit = enforceLimit(limitInput.value);
   const includeInactive = inactiveInput.checked;
   let overlayShown = false;
+  let overlayStart = 0;
   if (!dataset.loaded) {
     overlayShown = true;
     showLoadingOverlay('MedDRA 데이터 내려받는 중...', 5);
-    await sleep(75);
+    overlayStart = performance.now();
+    await nextFrame();
   }
   results.innerHTML = '<p>데이터를 불러오고 있습니다...</p>';
   try {
@@ -114,6 +122,10 @@ async function runSearch({ approximate }) {
     return;
   }
   if (overlayShown) {
+    const elapsed = performance.now() - overlayStart;
+    if (elapsed < MIN_OVERLAY_MS) {
+      await sleep(MIN_OVERLAY_MS - elapsed);
+    }
     updateLoadingOverlay('로딩 완료!', 100);
     await sleep(150);
     hideLoadingOverlay();
