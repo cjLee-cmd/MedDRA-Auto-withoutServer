@@ -22,9 +22,50 @@ const queryInput = document.getElementById('q');
 const limitInput = document.getElementById('limit');
 const inactiveInput = document.getElementById('inactive');
 const approxButton = document.getElementById('approx-search');
+const loadingOverlay = document.getElementById('loading-overlay');
+const loadingProgressTrack = document.getElementById('loading-progress-track');
+const loadingProgressBar = document.getElementById('loading-progress');
+const loadingStatus = document.getElementById('loading-status');
 
 if (results) {
   results.innerHTML = '<p>증상 또는 용어를 입력한 후 검색을 눌러주세요.</p>';
+}
+
+function showLoadingOverlay(message = '데이터 로딩 중...', percent = 0) {
+  if (!loadingOverlay) { return; }
+  loadingOverlay.removeAttribute('hidden');
+  updateLoadingOverlay(message, percent);
+}
+
+function updateLoadingOverlay(message, percent) {
+  if (typeof percent === 'number' && loadingProgressBar) {
+    const clamped = Math.max(0, Math.min(100, percent));
+    loadingProgressBar.style.width = `${clamped}%`;
+    if (loadingProgressTrack) {
+      loadingProgressTrack.setAttribute('aria-valuenow', String(Math.round(clamped)));
+    }
+  }
+  if (message && loadingStatus) {
+    loadingStatus.textContent = message;
+  }
+}
+
+function hideLoadingOverlay() {
+  if (!loadingOverlay) { return; }
+  loadingOverlay.setAttribute('hidden', '');
+  if (loadingProgressBar) {
+    loadingProgressBar.style.width = '0%';
+  }
+  if (loadingProgressTrack) {
+    loadingProgressTrack.setAttribute('aria-valuenow', '0');
+  }
+  if (loadingStatus) {
+    loadingStatus.textContent = '준비 중...';
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 form.addEventListener('submit', (event) => {
@@ -56,12 +97,26 @@ async function runSearch({ approximate }) {
   }
   const limit = enforceLimit(limitInput.value);
   const includeInactive = inactiveInput.checked;
+  let overlayShown = false;
+  if (!dataset.loaded) {
+    overlayShown = true;
+    showLoadingOverlay('MedDRA 데이터 내려받는 중...', 5);
+    await sleep(75);
+  }
   results.innerHTML = '<p>데이터를 불러오고 있습니다...</p>';
   try {
     await ensureDataset();
   } catch (error) {
+    if (overlayShown) {
+      hideLoadingOverlay();
+    }
     results.innerHTML = `<p>데이터 로딩 실패: ${escapeHtml(error.message || error)}</p>`;
     return;
+  }
+  if (overlayShown) {
+    updateLoadingOverlay('로딩 완료!', 100);
+    await sleep(150);
+    hideLoadingOverlay();
   }
   const searchResult = approximate
     ? searchApproximate(rawQuery, limit, includeInactive)
@@ -98,14 +153,22 @@ async function ensureDataset() {
 }
 
 async function loadDataset() {
-  const [lltText, ptText, hierText] = await Promise.all([
-    fetchText('ascii-281/llt.asc'),
-    fetchText('ascii-281/pt.asc'),
-    fetchText('ascii-281/mdhier.asc'),
-  ]);
+  updateLoadingOverlay('LLT 파일 다운로드 중...', 10);
+  const lltText = await fetchText('ascii-281/llt.asc');
+  updateLoadingOverlay('LLT 데이터 해석 중...', 30);
   parseLlt(lltText);
+
+  updateLoadingOverlay('PT 파일 다운로드 중...', 45);
+  const ptText = await fetchText('ascii-281/pt.asc');
+  updateLoadingOverlay('PT 데이터 해석 중...', 60);
   parsePt(ptText);
+
+  updateLoadingOverlay('계층 파일 다운로드 중...', 75);
+  const hierText = await fetchText('ascii-281/mdhier.asc');
+  updateLoadingOverlay('계층 데이터 해석 중...', 90);
   parseHierarchy(hierText);
+
+  updateLoadingOverlay('로딩 완료!', 100);
 }
 
 async function fetchText(path) {

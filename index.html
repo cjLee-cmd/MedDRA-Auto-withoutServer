@@ -69,6 +69,58 @@ input[type=checkbox] {
   width: 1rem;
   height: 1rem;
 }
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 24, 38, 0.55);
+  z-index: 999;
+  padding: 1.5rem;
+}
+.loading-overlay[hidden] {
+  display: none;
+}
+.loading-popup {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1.8rem 2.1rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(27, 37, 75, 0.25);
+  text-align: left;
+  color: #1b254b;
+}
+.loading-popup h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1.25rem;
+}
+.loading-popup p {
+  margin: 0 0 0.85rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+  color: #2d3f7b;
+}
+.progress-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(79, 103, 205, 0.18);
+  overflow: hidden;
+  margin-top: 0.4rem;
+}
+.progress-bar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(120deg, #4662ff, #2d46d6);
+  transition: width 0.25s ease;
+}
+.loading-status {
+  margin-top: 0.9rem;
+  font-size: 0.9rem;
+  color: #3b4c83;
+}
 .btn {
   padding: 0.6rem 1.2rem;
   border-radius: 8px;
@@ -343,6 +395,16 @@ input[type=checkbox] {
   </form>
   <section id="results"></section>
 </main>
+<div id="loading-overlay" class="loading-overlay" hidden>
+  <div class="loading-popup">
+    <h2>데이터 로딩 중...</h2>
+    <p>최초 검색은 MedDRA 원본 데이터를 내려받느라 시간이 조금 걸릴 수 있습니다.</p>
+    <div class="progress-track" id="loading-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="progress-bar" id="loading-progress"></div>
+    </div>
+    <p id="loading-status" class="loading-status">준비 중...</p>
+  </div>
+</div>
 <script src="script.js"></script>
 </body>
 </html>
