@@ -66,3 +66,16 @@ MedDRA(Medical Dictionary for Regulatory Activities) 28.1 한국어판 데이터
 - **무결성 검증**: 수정 전후 `wc -l ascii-281/*.asc`로 레코드 수를 비교하고, `$` 구분자가 예상 개수인지 `awk -F'\$' 'NF!=기대값'` 형태로 점검하십시오.
 - **자동화 스크립트**: Python에서 `csv` 모듈을 사용할 때 `delimiter='$'`, `lineterminator='\r\n'`, `encoding='utf-8'`을 지정해 추출 파이프라인을 구성합니다.
 - **보안/규제**: MedDRA 라이선스 조건을 준수하고, 내부 배포 시 사용자 계정을 관리하십시오.
+
+## 10. 로컬 조회 서버 실행
+`codex/meddra_server.py`는 LLT/PT 검색을 제공하는 간단한 HTTP 서버입니다. 데이터 루트에는 `ascii-281/` 디렉터리가 존재해야 합니다.
+
+```bash
+python3 codex/meddra_server.py --host 127.0.0.1 --port 8000
+```
+
+- 기본 UI는 `codex/meddra_ui.html` 파일을 서빙하며, `--ui` 옵션으로 다른 HTML 경로를 지정할 수 있습니다.
+- 서버가 실행되면 브라우저에서 `http://127.0.0.1:8000/`에 접속해 검색할 수 있습니다.
+- 동일 포트를 이미 사용하는 프로세스가 있다면 `lsof -nP -iTCP:8000`으로 PID를 확인한 뒤 종료하고 다시 실행하십시오.
+- Gemini 기반 AI 검색을 사용하려면 Google Generative Language API 키를 준비하고 `codex/.env.example`을 복사해 `codex/.env`를 만든 뒤 `GEMINI_API_KEY` 항목에 키를 채워 넣으세요. 실행 전에 `export GEMINI_API_KEY=...`로 지정하거나 명령행에서 `--gemini-key` 옵션으로 직접 전달할 수도 있습니다. 기본 모델은 `gemini-2.5-flash`입니다.
+- 기본 모델은 `gemini-1.5-flash`이며, `--gemini-model`로 다른 모델을 지정할 수 있습니다.

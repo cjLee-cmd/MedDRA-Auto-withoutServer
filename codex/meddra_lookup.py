@@ -5,13 +5,25 @@ import argparse
 import csv
 import sys
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 
 LLT_FIELD_COUNT = 12
 PT_FIELD_COUNT = 12
 MDHIER_FIELD_COUNT = 13
+
+LLT_SYNONYM_HINTS: Dict[str, List[str]] = {
+    "빈혈": [
+        "피가 모자람",
+        "피가 모자름",
+        "피 부족",
+        "피부족",
+        "혈액 부족",
+        "혈액부족",
+    ],
+}
 
 
 @dataclass
@@ -131,27 +143,76 @@ class MeddraData:
                 continue
             hier_list = hier_map.get(pt.code, [])
             hier = self._select_primary(hier_list)
+            score = self._compute_score(q, record.name, record.active)
+            hierarchies = self._build_hierarchy_payload(hier_list)
             results.append(
-                {
-                    "llt_code": record.code,
-                    "llt_name": record.name,
-                    "pt_code": pt.code,
-                    "pt_name": pt.name,
-                    "active": "Y" if record.active else "N",
-                    "soc_code": hier.soc_code if hier else pt.primary_soc_code,
-                    "soc_name": hier.soc_name if hier else "",
-                    "hlgt_name": hier.hlgt_name if hier else "",
-                    "hlt_name": hier.hlt_name if hier else "",
-                    "soc_abbrev": hier.soc_abbrev if hier else "",
-                    "primary_soc": "Y" if hier and hier.primary else ("" if not hier else "N"),
-                }
+                self._build_result(
+                    record=record,
+                    pt=pt,
+                    hier=hier,
+                    hierarchies=hierarchies,
+                    score=score,
+                )
             )
         results.sort(key=lambda item: (
+            -item["score"],
             0 if item["active"] == "Y" else 1,
-            item["llt_name"].casefold().find(q),
-            len(item["llt_name"]),
+            item["llt_name"].casefold(),
         ))
         return results[:limit]
+
+    def search_approximate_llt(self, query: str, limit: int, include_inactive: bool) -> List[Dict[str, str]]:
+        q_norm = self._normalize(query)
+        if not q_norm:
+            return []
+        pts = self.pt_records()
+        hier_map = self.hierarchy()
+        scored: List[Dict[str, str]] = []
+        for record in self.llt_records():
+            if not include_inactive and not record.active:
+                continue
+            pt = pts.get(record.pt_code)
+            if not pt:
+                continue
+            name_norm = self._normalize(record.name)
+            if not name_norm:
+                continue
+            variants = [name_norm]
+            for synonym in LLT_SYNONYM_HINTS.get(record.name, []):
+                syn_norm = self._normalize(synonym)
+                if syn_norm:
+                    variants.append(syn_norm)
+            ratio = 0.0
+            for variant in variants:
+                current = SequenceMatcher(None, q_norm, variant).ratio()
+                if q_norm in variant:
+                    current += 0.15
+                elif variant.startswith(q_norm) or q_norm.startswith(variant):
+                    current += 0.1
+                ratio = max(ratio, current)
+            if ratio < 0.25:
+                continue
+            score = min(100.0, ratio * 100 + (5 if record.active else 0))
+            hier_list = hier_map.get(pt.code, [])
+            hier = self._select_primary(hier_list)
+            hierarchies = self._build_hierarchy_payload(hier_list)
+            scored.append(
+                self._build_result(
+                    record=record,
+                    pt=pt,
+                    hier=hier,
+                    hierarchies=hierarchies,
+                    score=score,
+                )
+            )
+        scored.sort(
+            key=lambda item: (
+                -item.get("score", 0),
+                0 if item["active"] == "Y" else 1,
+                len(item["llt_name"]),
+            )
+        )
+        return scored[:limit]
 
     @staticmethod
     def _select_primary(hierarchies: Iterable[Hierarchy]) -> Optional[Hierarchy]:
@@ -163,6 +224,67 @@ class MeddraData:
                 primary = item
                 break
         return primary or fallback
+
+    @staticmethod
+    def _normalize(value: str) -> str:
+        return "".join(value.casefold().split())
+
+    @staticmethod
+    def _build_hierarchy_payload(hier_list: Iterable[Hierarchy]) -> List[Dict[str, str]]:
+        payload = []
+        for item in hier_list:
+            payload.append(
+                {
+                    "primary": "Y" if item.primary else "N",
+                    "hlt_code": item.hlt_code,
+                    "hlt_name": item.hlt_name,
+                    "hlgt_code": item.hlgt_code,
+                    "hlgt_name": item.hlgt_name,
+                    "soc_code": item.soc_code,
+                    "soc_name": item.soc_name,
+                }
+            )
+        return payload
+
+    @staticmethod
+    def _build_result(
+        record: LltRecord,
+        pt: PtRecord,
+        hier: Optional[Hierarchy],
+        hierarchies: List[Dict[str, str]],
+        score: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        result: Dict[str, Any] = {
+            "llt_code": record.code,
+            "llt_name": record.name,
+            "pt_code": pt.code,
+            "pt_name": pt.name,
+            "active": "Y" if record.active else "N",
+            "soc_code": hier.soc_code if hier else pt.primary_soc_code,
+            "soc_name": hier.soc_name if hier else "",
+            "hlgt_name": hier.hlgt_name if hier else "",
+            "hlt_name": hier.hlt_name if hier else "",
+            "soc_abbrev": hier.soc_abbrev if hier else "",
+            "primary_soc": "Y" if hier and hier.primary else ("" if not hier else "N"),
+            "hierarchies": hierarchies,
+        }
+        if score is not None:
+            result["score"] = float(score)
+        return result
+
+    @staticmethod
+    def _compute_score(query_cf: str, name: str, active: bool) -> int:
+        candidate_cf = name.casefold()
+        pos = candidate_cf.find(query_cf)
+        if pos < 0:
+            return 0
+        length_diff = abs(len(candidate_cf) - len(query_cf))
+        position_penalty = min(pos * 6, 45)
+        length_penalty = min(length_diff * 2, 35)
+        inactive_penalty = 20 if not active else 0
+        base = 100
+        score = base - position_penalty - length_penalty - inactive_penalty
+        return max(5, score)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
