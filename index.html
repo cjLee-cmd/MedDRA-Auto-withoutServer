@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>MedDRA 28.1 한국어 증상 코드 조회</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 2.5rem;
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  background: #f5f7fb;
+  color: #1b254b;
+}
+main {
+  max-width: 920px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.95rem;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.subtitle {
+  margin: 0.15rem 0 1.4rem;
+  font-size: 0.98rem;
+  color: rgba(27, 37, 75, 0.5);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+form {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e0e7ff;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08);
+}
+label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #4a5d8f;
+}
+input[type=text],
+input[type=number] {
+  width: 260px;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#limit {
+  width: 60px;
+}
+input[type=text]:focus,
+input[type=number]:focus {
+  border-color: #3f63e9;
+  box-shadow: 0 0 0 3px rgba(63, 99, 233, 0.2);
+  outline: none;
+}
+input[type=checkbox] {
+  accent-color: #3f63e9;
+  width: 1rem;
+  height: 1rem;
+}
+.btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #4662ff, #2d46d6);
+  color: #ffffff;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(70, 98, 255, 0.25);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 24px rgba(70, 98, 255, 0.3);
+}
+.btn-ai {
+  background: rgba(70, 98, 255, 0.12);
+  color: #2d46d6;
+  border: 1px solid rgba(70, 98, 255, 0.3);
+}
+.btn-ai:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(70, 98, 255, 0.22);
+}
+.btn-ai:active {
+  transform: translateY(0);
+  box-shadow: 0 10px 18px rgba(70, 98, 255, 0.24);
+}
+.button-group {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+.btn-secondary {
+  background: #eef2ff;
+  color: #31408f;
+  border: 1px solid rgba(70, 98, 255, 0.32);
+}
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(70, 98, 255, 0.18);
+}
+.btn-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 18px rgba(70, 98, 255, 0.22);
+}
+.config-panel {
+  width: 100%;
+  margin-top: 0.4rem;
+  display: grid;
+  gap: 0.45rem;
+}
+.config-panel label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5d8f;
+}
+#api-base {
+  width: 100%;
+  max-width: 360px;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#api-base:focus {
+  border-color: #3f63e9;
+  box-shadow: 0 0 0 3px rgba(63, 99, 233, 0.18);
+  outline: none;
+}
+.config-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.config-note {
+  font-size: 0.8rem;
+  color: rgba(27, 37, 75, 0.65);
+}
+#results {
+  margin-top: 1.75rem;
+  display: grid;
+  gap: 1.25rem;
+}
+.ai-summary {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #44507a;
+  font-weight: 600;
+}
+.result-card {
+  background: #f9fbff;
+  border-radius: 22px;
+  border: 1px solid #dce4ff;
+  box-shadow: 0 20px 45px rgba(64, 87, 217, 0.15);
+  overflow: hidden;
+}
+.card-summary {
+  width: 100%;
+  border: none;
+  background: linear-gradient(120deg, #eef3ff, #f9fbff);
+  padding: 1.35rem 3.6rem 1.35rem 1.8rem;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: 1rem;
+  row-gap: 0.4rem;
+  align-items: center;
+  position: relative;
+}
+.card-summary::after {
+  content: "";
+  position: absolute;
+  right: 1.9rem;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-right: 3px solid #7a8ac7;
+  border-bottom: 3px solid #7a8ac7;
+  transform: translateY(-50%) rotate(45deg);
+  transition: transform 0.2s ease;
+}
+.card-summary[aria-expanded="true"]::after {
+  transform: translateY(-50%) rotate(-135deg);
+}
+.llt-summary {
+  display: grid;
+  gap: 0.35rem;
+}
+.llt-top-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.score-badge {
+  justify-self: start;
+  align-self: start;
+  background: rgba(45, 70, 214, 0.12);
+  color: #2d46d6;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+}
+.term-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.term-code {
+  color: #7a8ac7;
+  font-size: 0.92rem;
+}
+.status-indicator {
+  margin-left: auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1c7c54;
+  padding-right: 1rem;
+}
+.status-indicator.off {
+  color: #b91c1c;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.chip-llt { background: #e7ecff; color: #3042a6; }
+.chip-pt { background: #dff7ff; color: #117b98; }
+.chip-hlt { background: #fee3dc; color: #d9480f; }
+.chip-hlgt { background: #ffeccb; color: #b45309; }
+.chip-soc { background: #e2f4df; color: #256029; }
+.badge-primary {
+  background: #f97316;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  display: inline-block;
+}
+.card-details {
+  border-top: 1px solid #e1e6ff;
+  padding: 1.35rem 1.7rem 1.6rem;
+  margin-left: 3.2rem;
+  border-left: 4px solid rgba(108, 140, 255, 0.28);
+  border-bottom-left-radius: 18px;
+  display: none;
+  gap: 1.1rem;
+  background: #ffffff;
+}
+.ai-reason {
+  margin-left: 1.6rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(45, 70, 214, 0.06);
+  color: #2d3f7b;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.card-summary[aria-expanded="true"] + .card-details {
+  display: grid;
+}
+.pt-block {
+  display: grid;
+  gap: 0.35rem;
+  margin-left: 1.6rem;
+}
+.pt-block .term-name {
+  font-size: 1.05rem;
+}
+.pt-meta {
+  color: #8b93b6;
+  font-size: 0.88rem;
+}
+.hierarchy-card {
+  border-radius: 18px;
+  border: 1px solid #e4ebff;
+  padding: 1.2rem 1.4rem 1.3rem;
+  position: relative;
+  background: #fdfdff;
+  box-shadow: 0 12px 36px rgba(78, 102, 215, 0.12);
+  margin-left: 1.6rem;
+}
+.hierarchy-card.is-primary {
+  border-color: #f97316;
+  box-shadow: 0 14px 40px rgba(249, 115, 22, 0.22);
+}
+.hierarchy-card.is-primary .badge-primary {
+  position: absolute;
+  top: 1rem;
+  right: 1.1rem;
+}
+.hierarchy-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 1.1rem;
+}
+.node-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.node-point {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(71, 85, 182, 0.15);
+}
+.node-point.hlt { background: #f8b89b; }
+.node-point.hlgt { background: #ffd79f; }
+.node-point.soc { background: #a5df9d; }
+.node-connector {
+  flex: 1;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(147, 170, 255, 0.4), rgba(147, 170, 255, 0));
+}
+.node-content {
+  display: grid;
+  gap: 0.95rem;
+}
+.node-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.node-texts {
+  display: grid;
+  gap: 0.2rem;
+}
+.level-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1d2b5b;
+}
+.level-code {
+  font-size: 0.85rem;
+  color: #7a8ac7;
+}
+.empty-hierarchy {
+  color: #7a8399;
+  font-size: 0.9rem;
+}
+@media (max-width: 640px) {
+  body { padding: 1.5rem; }
+  form { padding: 1rem; }
+  input[type=text], input[type=number] { width: 100%; }
+  .card-summary { padding-right: 3.6rem; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>MEDGEN | 한국어 증상코드조회</h1>
+  <p class="subtitle">MedDRA 28.1 | AI</p>
+  <form id="search-form">
+    <label for="q">증상 또는 용어</label>
+    <input type="text" id="q" name="q" placeholder="예: 빈혈" required />
+    <label for="limit">결과 수</label>
+    <input type="number" id="limit" name="limit" value="10" min="1" />
+    <label><input type="checkbox" id="inactive" /> 비활성 용어 포함</label>
+    <div class="button-group">
+      <button type="submit" class="btn btn-primary">검색</button>
+      <button type="button" class="btn btn-ai" id="ai-search">AI 검색</button>
+    </div>
+    <div class="config-panel">
+      <label for="api-base">API 서버 주소</label>
+      <input type="url" id="api-base" placeholder="예: https://meddra.example.com" />
+      <div class="config-actions">
+        <button type="button" class="btn btn-secondary" id="save-api">주소 저장</button>
+        <button type="button" class="btn btn-secondary" id="clear-api">초기화</button>
+        <span class="config-note">?api=파라미터 또는 저장 버튼으로 백엔드 주소를 설정합니다.</span>
+      </div>
+    </div>
+  </form>
+  <section id="results"></section>
+</main>
+<script>
+const CONFIG = (() => {
+  const defaultConfig = {
+    apiBase: '',
+    searchPath: '/search',
+  };
+  try {
+    const stored = localStorage.getItem('meddraApiBase');
+    if (stored) {
+      defaultConfig.apiBase = stored.trim();
+    }
+  } catch (error) {
+    console.warn('API 설정을 불러오지 못했습니다.', error);
+  }
+  const url = new URL(window.location.href);
+  const apiParam = url.searchParams.get('api');
+  if (apiParam !== null) {
+    defaultConfig.apiBase = apiParam.trim();
+    try {
+      if (defaultConfig.apiBase) {
+        localStorage.setItem('meddraApiBase', defaultConfig.apiBase);
+      } else {
+        localStorage.removeItem('meddraApiBase');
+      }
+    } catch (error) {
+      console.warn('API 설정을 저장하지 못했습니다.', error);
+    }
+  }
+  const pathParam = url.searchParams.get('path');
+  if (pathParam !== null) {
+    defaultConfig.searchPath = pathParam.trim() || '/search';
+  }
+  const globalConfig = window.MEDDRA_API_CONFIG || {};
+  const apiBase = (globalConfig.apiBase ?? defaultConfig.apiBase ?? '').replace(/\/+$/, '');
+  const searchPath = globalConfig.searchPath ?? defaultConfig.searchPath ?? '/search';
+  return { apiBase, searchPath };
+})();
+
+const form = document.getElementById('search-form');
+const results = document.getElementById('results');
+const queryInput = document.getElementById('q');
+const limitInput = document.getElementById('limit');
+const inactiveInput = document.getElementById('inactive');
+const aiButton = document.getElementById('ai-search');
+const apiBaseInput = document.getElementById('api-base');
+const saveApiButton = document.getElementById('save-api');
+const clearApiButton = document.getElementById('clear-api');
+let currentAiMode = false;
+
+initializeConfigPanel();
+
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  runSearch({ ai: false });
+});
+
+aiButton.addEventListener('click', (event) => {
+  event.preventDefault();
+  runSearch({ ai: true });
+});
+
+results.addEventListener('click', (event) => {
+  const summary = event.target.closest('.card-summary');
+  if (!summary || !results.contains(summary)) { return; }
+  const card = summary.closest('.result-card');
+  const details = card ? card.querySelector('.card-details') : null;
+  if (!details) { return; }
+  const expanded = summary.getAttribute('aria-expanded') === 'true';
+  summary.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+  details.hidden = expanded;
+});
+
+async function runSearch({ ai }) {
+  const rawQuery = queryInput.value.trim();
+  if (!rawQuery) { return; }
+  const limit = enforceLimit(limitInput.value);
+  const includeInactive = inactiveInput.checked ? '1' : '0';
+  results.innerHTML = '<p>검색 중...</p>';
+  try {
+    const data = await fetchResults(rawQuery, limit, includeInactive, ai);
+    if (!data.results.length) {
+      results.innerHTML = '<p>검색 결과가 없습니다.</p>';
+      return;
+    }
+    if (ai && data.results.length) {
+      queryInput.value = data.results[0].llt_name;
+    }
+    renderResults(data);
+  } catch (error) {
+    results.innerHTML = '<p>오류: ' + error.message + '</p>';
+  }
+}
+
+async function fetchResults(query, limit, includeInactive, aiFlag) {
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(limit),
+    inactive: includeInactive,
+    ai: aiFlag ? '1' : '0',
+  });
+  const endpoint = buildSearchEndpoint();
+  const response = await fetch(endpoint + '?' + params.toString(), { headers: { 'Accept': 'application/json' } });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || response.statusText);
+  }
+  return response.json();
+}
+
+function buildSearchEndpoint() {
+  const base = CONFIG.apiBase ? CONFIG.apiBase.replace(/\/+$/, '') : '';
+  const path = (CONFIG.searchPath || '/search').trim();
+  if (!base) {
+    if (!path) { return '/search'; }
+    return path.startsWith('/') ? path : '/' + path;
+  }
+  if (!path) { return base + '/search'; }
+  return base + (path.startsWith('/') ? path : '/' + path);
+}
+
+function enforceLimit(value) {
+  const parsed = parseInt(value, 10);
+  const limited = Math.min(parsed || 10, 10);
+  limitInput.value = limited;
+  return limited;
+}
+
+function renderResults(data) {
+  if (!Array.isArray(data.results) || !data.results.length) {
+    results.innerHTML = '<p>검색 결과가 없습니다.</p>';
+    return;
+  }
+  currentAiMode = Boolean(data.ai);
+  const html = data.results.slice(0, 10).map((item, index) => createResultCard(item, index)).join('');
+  const summaryParts = [];
+  if (data.ai) {
+    summaryParts.push('Gemini AI 순위 적용');
+  }
+  if (data.approximate) {
+    summaryParts.push('유사어 매칭 결과 포함');
+  }
+  const summary = summaryParts.length ? `<p class="ai-summary">${summaryParts.join(' · ')}</p>` : '';
+  results.innerHTML = summary + html;
+}
+
+function createResultCard(item, index) {
+  const isActive = item.active === 'Y';
+  const hierarchies = Array.isArray(item.hierarchies) ? item.hierarchies : [];
+  const hierarchyMarkup = hierarchies.length ? hierarchies.map(renderHierarchyCard).join('') : '<p class="empty-hierarchy">등록된 계층 정보가 없습니다.</p>';
+  const showScore = currentAiMode && typeof item.score === 'number';
+  const scoreValue = showScore ? Math.round(item.score) : 0;
+  const scoreBadge = showScore ? `<span class="score-badge">관련지수 ${scoreValue}</span>` : '';
+  const reasonMarkup = currentAiMode && item.ai_reason ? `<p class="ai-reason">AI 근거: ${escapeHtml(item.ai_reason)}</p>` : '';
+  return `
+    <article class="result-card" data-index="${index}">
+      <button class="card-summary" type="button" aria-expanded="false">
+        <span class="chip chip-llt">LLT</span>
+        <div class="llt-summary">
+          <div class="llt-top-row">
+            <span class="term-name">${escapeHtml(item.llt_name)}</span>
+            <span class="status-indicator ${isActive ? '' : 'off'}">${isActive ? '활성' : '비활성'}</span>
+          </div>
+          <span class="term-code">${item.llt_code}</span>
+        </div>
+        ${scoreBadge}
+      </button>
+      <div class="card-details" hidden>
+        ${renderPTBlock(item)}
+        ${reasonMarkup}
+        ${hierarchyMarkup}
+      </div>
+    </article>
+  `;
+}
+
+function renderPTBlock(item) {
+  return `
+    <div class="pt-block">
+      <div class="llt-top-row">
+        <span class="chip chip-pt">PT</span>
+        <span class="term-name">${escapeHtml(item.pt_name)}</span>
+      </div>
+      <span class="pt-meta">코드 ${item.pt_code}</span>
+    </div>
+  `;
+}
+
+function renderHierarchyCard(hier) {
+  const primaryBadge = hier.primary === 'Y' ? '<span class="badge-primary">Primary</span>' : '';
+  return `
+    <div class="hierarchy-card ${hier.primary === 'Y' ? 'is-primary' : ''}">
+      ${primaryBadge}
+      <div class="hierarchy-flow">
+        <div class="node-rail">
+          <span class="node-point hlt"></span>
+          <span class="node-connector"></span>
+          <span class="node-point hlgt"></span>
+          <span class="node-connector"></span>
+          <span class="node-point soc"></span>
+        </div>
+        <div class="node-content">
+          <div class="node-row">
+            <span class="chip chip-hlt">HLT</span>
+            <div class="node-texts">
+              <span class="level-name">${escapeHtml(hier.hlt_name || '-')}</span>
+              <span class="level-code">${hier.hlt_code || '-'}</span>
+            </div>
+          </div>
+          <div class="node-row">
+            <span class="chip chip-hlgt">HLGT</span>
+            <div class="node-texts">
+              <span class="level-name">${escapeHtml(hier.hlgt_name || '-')}</span>
+              <span class="level-code">${hier.hlgt_code || '-'}</span>
+            </div>
+          </div>
+          <div class="node-row">
+            <span class="chip chip-soc">SOC</span>
+            <div class="node-texts">
+              <span class="level-name">${escapeHtml(hier.soc_name || '-')}</span>
+              <span class="level-code">${hier.soc_code || '-'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function initializeConfigPanel() {
+  if (!apiBaseInput || !saveApiButton || !clearApiButton) {
+    return;
+  }
+  apiBaseInput.value = CONFIG.apiBase;
+  saveApiButton.addEventListener('click', () => {
+    const value = apiBaseInput.value.trim();
+    persistApiBase(value);
+    refreshWithApiParam(value);
+  });
+  clearApiButton.addEventListener('click', () => {
+    apiBaseInput.value = '';
+    persistApiBase('');
+    refreshWithApiParam('');
+  });
+}
+
+function persistApiBase(value) {
+  try {
+    if (value) {
+      localStorage.setItem('meddraApiBase', value);
+    } else {
+      localStorage.removeItem('meddraApiBase');
+    }
+  } catch (error) {
+    console.warn('API 설정을 저장하지 못했습니다.', error);
+  }
+}
+
+function refreshWithApiParam(value) {
+  const url = new URL(window.location.href);
+  if (value) {
+    url.searchParams.set('api', value);
+  } else {
+    url.searchParams.delete('api');
+  }
+  window.location.href = url.toString();
+}
+</script>
+</body>
+</html>
