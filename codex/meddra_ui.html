@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>MedDRA 28.1 한국어 증상 코드 조회</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+form { margin-bottom: 1.5rem; }
+input[type=text] { width: 320px; padding: 0.4rem; }
+button { padding: 0.4rem 0.8rem; }
+.result { margin-bottom: 1.2rem; padding: 0.8rem; border: 1px solid #ddd; border-radius: 6px; }
+.result h3 { margin: 0 0 0.4rem; }
+.meta { color: #555; font-size: 0.9rem; }
+pre { white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>MedDRA 28.1 한국어 증상 코드 조회 (feat. Codex)</h1>
+<form id="search-form">
+  <label for="q">증상 또는 용어:</label>
+  <input type="text" id="q" name="q" placeholder="예: 빈혈" required />
+  <label for="limit">결과 수:</label>
+  <input type="number" id="limit" name="limit" value="10" min="1" />
+  <label><input type="checkbox" id="inactive" /> 비활성 용어 포함</label>
+  <button type="submit">검색</button>
+</form>
+<section id="results"></section>
+<script>
+const form = document.getElementById('search-form');
+const results = document.getElementById('results');
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const q = document.getElementById('q').value.trim();
+  if (!q) return;
+  const limit = document.getElementById('limit').value || '10';
+  const includeInactive = document.getElementById('inactive').checked ? '1' : '0';
+  results.innerHTML = '<p>검색 중...</p>';
+  try {
+    const params = new URLSearchParams({ q, limit, inactive: includeInactive });
+    const response = await fetch('/search?' + params.toString(), { headers: { 'Accept': 'application/json' } });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || response.statusText);
+    }
+    const data = await response.json();
+    if (!data.results.length) {
+      results.innerHTML = '<p>검색 결과가 없습니다.</p>';
+      return;
+    }
+    results.innerHTML = data.results.map((item) => {
+      return `<article class="result">` +
+        `<h3>LLT ${item.llt_code}: ${item.llt_name} (${item.active === 'Y' ? '활성' : '비활성'})</h3>` +
+        `<div class="meta">PT ${item.pt_code}: ${item.pt_name}</div>` +
+        `<div class="meta">SOC ${item.soc_code || '-'}: ${item.soc_name || '-'} / HLGT: ${item.hlgt_name || '-'} / HLT: ${item.hlt_name || '-'}</div>` +
+        `<div class="meta">Primary SOC: ${item.primary_soc || '-'}</div>` +
+        `</article>`;
+    }).join('');
+  } catch (error) {
+    results.innerHTML = '<p>오류: ' + error.message + '</p>';
+  }
+});
+</script>
+</body>
+</html>

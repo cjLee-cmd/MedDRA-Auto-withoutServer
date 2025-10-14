@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedDRA 28.1 한국어 증상 코드 조회 (feat. Gemini)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>MedDRA 28.1 한국어 증상 코드 조회 (feat. Gemini)</h1>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="증상을 입력하세요...">
+            <button id="searchButton">검색</button>
+        </div>
+        <div class="results-box">
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>코드</th>
+                        <th>용어</th>
+                        <th>레벨</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+            <p id="noResults" class="hidden">검색 결과가 없습니다.</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
