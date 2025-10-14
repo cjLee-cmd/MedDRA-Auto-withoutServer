@@ -129,11 +129,13 @@ input[type=checkbox] {
   width: 100%;
   border: none;
   background: linear-gradient(120deg, #eef3ff, #f9fbff);
-  padding: 1.35rem 1.6rem;
+  padding: 1.35rem 3.6rem 1.35rem 1.8rem;
   text-align: left;
   cursor: pointer;
-  display: flex;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: 1rem;
+  row-gap: 0.4rem;
   align-items: center;
   position: relative;
 }
@@ -162,7 +164,8 @@ input[type=checkbox] {
   gap: 0.7rem;
 }
 .score-badge {
-  margin-left: auto;
+  justify-self: start;
+  align-self: start;
   background: rgba(45, 70, 214, 0.12);
   color: #2d46d6;
   font-size: 0.85rem;
@@ -183,6 +186,7 @@ input[type=checkbox] {
   font-size: 0.85rem;
   font-weight: 600;
   color: #1c7c54;
+  padding-right: 1rem;
 }
 .status-indicator.off {
   color: #b91c1c;
@@ -318,7 +322,7 @@ input[type=checkbox] {
   body { padding: 1.5rem; }
   form { padding: 1rem; }
   input[type=text], input[type=number] { width: 100%; }
-  .card-summary { padding-right: 3.2rem; }
+  .card-summary { padding-right: 3.6rem; }
 }
 </style>
 </head>
@@ -346,6 +350,7 @@ const queryInput = document.getElementById('q');
 const limitInput = document.getElementById('limit');
 const inactiveInput = document.getElementById('inactive');
 const aiButton = document.getElementById('ai-search');
+let currentAiMode = false;
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -416,6 +421,7 @@ function renderResults(data) {
     results.innerHTML = '<p>검색 결과가 없습니다.</p>';
     return;
   }
+  currentAiMode = Boolean(data.ai);
   const html = data.results.slice(0, 10).map((item, index) => createResultCard(item, index)).join('');
   const summaryParts = [];
   if (data.ai) {
@@ -432,8 +438,10 @@ function createResultCard(item, index) {
   const isActive = item.active === 'Y';
   const hierarchies = Array.isArray(item.hierarchies) ? item.hierarchies : [];
   const hierarchyMarkup = hierarchies.length ? hierarchies.map(renderHierarchyCard).join('') : '<p class="empty-hierarchy">등록된 계층 정보가 없습니다.</p>';
-  const scoreValue = typeof item.score === 'number' ? Math.round(item.score) : 0;
-  const reasonMarkup = item.ai_reason ? `<p class="ai-reason">AI 근거: ${escapeHtml(item.ai_reason)}</p>` : '';
+  const showScore = currentAiMode && typeof item.score === 'number';
+  const scoreValue = showScore ? Math.round(item.score) : 0;
+  const scoreBadge = showScore ? `<span class="score-badge">관련지수 ${scoreValue}</span>` : '';
+  const reasonMarkup = currentAiMode && item.ai_reason ? `<p class="ai-reason">AI 근거: ${escapeHtml(item.ai_reason)}</p>` : '';
   return `
     <article class="result-card" data-index="${index}">
       <button class="card-summary" type="button" aria-expanded="false">
@@ -445,7 +453,7 @@ function createResultCard(item, index) {
           </div>
           <span class="term-code">${item.llt_code}</span>
         </div>
-        <span class="score-badge">관련지수 ${scoreValue}</span>
+        ${scoreBadge}
       </button>
       <div class="card-details" hidden>
         ${renderPTBlock(item)}
