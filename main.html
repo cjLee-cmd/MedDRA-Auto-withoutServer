@@ -873,10 +873,10 @@ input[type=checkbox] {
 .section-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1b254b;
+  color: var(--text-primary);
   margin: 0 0 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #e0e7ff;
+  border-bottom: 2px solid var(--border-primary);
 }
 .info-grid {
   display: grid;
@@ -887,18 +887,19 @@ input[type=checkbox] {
   grid-template-columns: 180px 1fr;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  background: #f9fbff;
+  background: var(--card-bg);
   border-radius: 10px;
-  border: 1px solid #e0e7ff;
+  border: 1px solid var(--border-card);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .info-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #4a5d8f;
+  color: var(--text-tertiary);
 }
 .info-value {
   font-size: 0.875rem;
-  color: #1b254b;
+  color: var(--text-primary);
   font-weight: 500;
 }
 .reaction-list, .drug-list, .lab-list {
@@ -906,16 +907,17 @@ input[type=checkbox] {
   gap: 1rem;
 }
 .reaction-card, .drug-card, .lab-card {
-  background: #ffffff;
-  border: 1px solid #e0e7ff;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-card);
   border-radius: 12px;
   padding: 1.2rem;
-  box-shadow: 0 8px 20px rgba(63, 99, 233, 0.08);
+  box-shadow: var(--shadow-md);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .card-header {
   font-size: 1rem;
   font-weight: 700;
-  color: #2d46d6;
+  color: var(--accent-secondary);
   margin-bottom: 0.75rem;
 }
 .card-body {
@@ -930,10 +932,10 @@ input[type=checkbox] {
 }
 .card-row-label {
   font-weight: 600;
-  color: #7a8ac7;
+  color: var(--text-secondary);
 }
 .card-row-value {
-  color: #1b254b;
+  color: var(--text-primary);
   font-weight: 500;
 }
 /* 자동 검색 분할 패널 */
