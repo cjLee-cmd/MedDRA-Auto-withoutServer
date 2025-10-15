@@ -38,6 +38,31 @@ playwright-report/
 test-results/
 playwright/.cache/
 
+# Test files and artifacts (temporary test cases)
+test-cioms-*.spec.js
+demo_*.js
+docs/
+downloads/
+
+# But keep test infrastructure
+!playwright.config.js
+!pytest.ini
+!run_tests.sh
+!requirements-dev.txt
+
+# Design documentation (temporary)
+*_DESIGN.md
+*_SUMMARY.md
+*_GUIDE.md
+*_REPORT.md
+*_IMPROVEMENTS.md
+
+# Screenshots and images (temporary test artifacts)
+*.png
+!screenshot-*.png
+image.png
+cioms-popup-test.png
+
 # OS
 .DS_Store
 Thumbs.db
