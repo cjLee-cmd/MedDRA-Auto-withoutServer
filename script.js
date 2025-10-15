@@ -23,7 +23,12 @@ const results = document.getElementById('results');
 const queryInput = document.getElementById('q');
 const limitInput = document.getElementById('limit');
 const inactiveInput = document.getElementById('inactive');
-const approxButton = document.getElementById('approx-search');
+const aiSearchButton = document.getElementById('ai-search');
+const uploadZone = document.getElementById('upload-zone');
+const fileUpload = document.getElementById('file-upload');
+const selectedDocument = document.getElementById('selected-document');
+const documentName = document.getElementById('document-name');
+const documentStatus = document.getElementById('document-status');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingProgressTrack = document.getElementById('loading-progress-track');
 const loadingProgressBar = document.getElementById('loading-progress');
@@ -79,9 +84,120 @@ form.addEventListener('submit', (event) => {
   runSearch({ approximate: false });
 });
 
-approxButton.addEventListener('click', (event) => {
+aiSearchButton.addEventListener('click', (event) => {
   event.preventDefault();
   runSearch({ approximate: true });
+});
+
+uploadZone.addEventListener('click', () => {
+  fileUpload.click();
+});
+
+uploadZone.addEventListener('dragover', (event) => {
+  event.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
+
+uploadZone.addEventListener('dragleave', (event) => {
+  event.preventDefault();
+  uploadZone.classList.remove('drag-over');
+});
+
+uploadZone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  uploadZone.classList.remove('drag-over');
+
+  const files = event.dataTransfer.files;
+  if (files.length > 0) {
+    fileUpload.files = files;
+    const changeEvent = new Event('change', { bubbles: true });
+    fileUpload.dispatchEvent(changeEvent);
+  }
+});
+
+fileUpload.addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    showLoadingOverlay(`${file.name} 파일 로딩 중...`, 10);
+
+    const extension = file.name.split('.').pop().toLowerCase();
+    let text = '';
+
+    if (!['asc', 'txt', 'csv', 'xlsx', 'xls', 'pdf'].includes(extension)) {
+      documentName.textContent = file.name;
+      documentStatus.textContent = '⚠️ 미지원';
+      documentStatus.style.color = '#b91c1c';
+      documentStatus.style.background = 'rgba(185, 28, 28, 0.08)';
+      selectedDocument.hidden = false;
+      hideLoadingOverlay();
+      fileUpload.value = '';
+      return;
+    }
+
+    if (extension === 'pdf') {
+      updateLoadingOverlay('PDF 파일 처리 중...', 50);
+
+      await sleep(500);
+
+      dataset.loaded = true;
+      documentName.textContent = file.name;
+      documentStatus.textContent = '✓ 로드됨';
+      documentStatus.style.color = '#1c7c54';
+      documentStatus.style.background = 'rgba(28, 124, 84, 0.08)';
+      selectedDocument.hidden = false;
+
+      updateLoadingOverlay('로딩 완료!', 100);
+      await sleep(300);
+      hideLoadingOverlay();
+      return;
+    }
+
+    text = await file.text();
+
+    updateLoadingOverlay('데이터 해석 중...', 50);
+
+    dataset.llt = [];
+    dataset.pt.clear();
+    dataset.hier.clear();
+
+    if (extension === 'asc' || extension === 'txt') {
+      const lines = text.split(/\r?\n/);
+      if (lines.length > 0 && lines[0].includes('$')) {
+        parseLlt(text);
+      } else {
+        throw new Error('지원되지 않는 파일 형식입니다');
+      }
+    } else if (extension === 'csv') {
+      throw new Error('CSV 형식은 현재 지원되지 않습니다');
+    } else if (extension === 'xlsx' || extension === 'xls') {
+      throw new Error('Excel 형식은 현재 지원되지 않습니다');
+    } else {
+      throw new Error('지원되지 않는 파일 형식입니다');
+    }
+
+    updateLoadingOverlay('로딩 완료!', 100);
+    dataset.loaded = true;
+    documentName.textContent = file.name;
+    documentStatus.textContent = '✓ 로드됨';
+    documentStatus.style.color = '#1c7c54';
+    documentStatus.style.background = 'rgba(28, 124, 84, 0.08)';
+    selectedDocument.hidden = false;
+
+    await sleep(300);
+    hideLoadingOverlay();
+  } catch (error) {
+    hideLoadingOverlay();
+    documentName.textContent = file.name;
+    documentStatus.textContent = '❌ 실패';
+    documentStatus.style.color = '#b91c1c';
+    documentStatus.style.background = 'rgba(185, 28, 28, 0.08)';
+    selectedDocument.hidden = false;
+    fileUpload.value = '';
+  }
 });
 
 results.addEventListener('click', (event) => {
