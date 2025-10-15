@@ -44,6 +44,15 @@ demo_*.js
 docs/
 downloads/
 
+# Playwright test scripts (manual testing)
+open_login.js
+screenshot.js
+show_layout.js
+simple_demo.js
+test_layout.js
+test_pdf_scroll.js
+test_scroll.js
+
 # But keep test infrastructure
 !playwright.config.js
 !pytest.ini
