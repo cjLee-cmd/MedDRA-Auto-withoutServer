@@ -49,6 +49,15 @@ class MeddraRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/search":
             self._handle_search(parsed.query)
             return
+        # Serve script.js
+        if parsed.path == "/script.js":
+            self._send_file("script.js", "text/javascript")
+            return
+        # Serve .asc data files
+        if parsed.path.startswith("/ascii-281/") and parsed.path.endswith(".asc"):
+            file_path = parsed.path.lstrip("/")
+            self._send_file(file_path, "text/plain")
+            return
         self._send_json({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
@@ -109,6 +118,18 @@ class MeddraRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
+
+    def _send_file(self, file_path: str, content_type: str) -> None:
+        try:
+            with open(file_path, "rb") as fh:
+                data = fh.read()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", f"{content_type}; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        except FileNotFoundError:
+            self._send_json({"error": "file not found"}, status=HTTPStatus.NOT_FOUND)
 
     def _apply_ai_ranking(self, query: str, results: list[Dict[str, Any]], limit: int) -> list[Dict[str, Any]]:
         if not results:

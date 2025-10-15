@@ -193,8 +193,7 @@ async function fetchText(path) {
 
 function parseLlt(text) {
   dataset.llt = [];
-  const lines = text.split(/?
-/);
+  const lines = text.split(/\r?\n/);
   for (const line of lines) {
     if (!line) { continue; }
     const row = padFields(line.split('$'), LLT_FIELD_COUNT);
@@ -216,8 +215,7 @@ function parseLlt(text) {
 
 function parsePt(text) {
   dataset.pt.clear();
-  const lines = text.split(/?
-/);
+  const lines = text.split(/\r?\n/);
   for (const line of lines) {
     if (!line) { continue; }
     const row = padFields(line.split('$'), PT_FIELD_COUNT);
@@ -235,8 +233,7 @@ function parsePt(text) {
 
 function parseHierarchy(text) {
   dataset.hier.clear();
-  const lines = text.split(/?
-/);
+  const lines = text.split(/\r?\n/);
   for (const line of lines) {
     if (!line) { continue; }
     const row = padFields(line.split('$'), MDHIER_FIELD_COUNT);
