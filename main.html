@@ -169,11 +169,17 @@ body {
   font-weight: 700;
   letter-spacing: 0.02em;
 }
+.sidebar-header-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 150px;
+}
 .dark-mode-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  justify-content: center;
+  padding: 0.6rem 0.8rem;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
   border-radius: 8px;
@@ -182,7 +188,6 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-left: 0.5rem;
 }
 .dark-mode-toggle:hover {
   background: var(--bg-secondary);
@@ -1345,14 +1350,13 @@ input[type=checkbox] {
 // 다크모드 토글 기능
 function initDarkMode() {
   const darkModeToggle = document.getElementById('dark-mode-toggle');
-  const themeIcon = document.getElementById('theme-icon');
   const body = document.body;
 
   // 저장된 테마 설정 불러오기
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'dark') {
     body.classList.add('dark-mode');
-    if (themeIcon) themeIcon.textContent = '☀️';
+    if (darkModeToggle) darkModeToggle.textContent = '라이트모드';
   }
 
   // 다크모드 토글 버튼 이벤트
@@ -1360,12 +1364,12 @@ function initDarkMode() {
     darkModeToggle.addEventListener('click', function() {
       body.classList.toggle('dark-mode');
 
-      // 아이콘 변경
+      // 버튼 텍스트 변경
       if (body.classList.contains('dark-mode')) {
-        if (themeIcon) themeIcon.textContent = '☀️';
+        darkModeToggle.textContent = '라이트모드';
         localStorage.setItem('theme', 'dark');
       } else {
-        if (themeIcon) themeIcon.textContent = '🌙';
+        darkModeToggle.textContent = '다크모드';
         localStorage.setItem('theme', 'light');
       }
     });
@@ -1380,10 +1384,8 @@ function initDarkMode() {
         <h1>MEDGEN</h1>
         <p class="subtitle">MedDRA 28.1 한국어</p>
       </div>
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <button type="button" id="dark-mode-toggle" class="dark-mode-toggle" title="다크모드 전환">
-          <span id="theme-icon">🌙</span>
-        </button>
+      <div class="sidebar-header-buttons">
+        <button type="button" id="dark-mode-toggle" class="dark-mode-toggle" title="다크모드 전환">다크모드</button>
         <button type="button" id="logout-button" class="logout-button" title="로그아웃">
           <span class="user-badge" id="user-badge"></span>
           <span>로그아웃</span>

@@ -46,6 +46,9 @@ class MeddraRequestHandler(BaseHTTPRequestHandler):
         if parsed.path in {"/", "/index.html"}:
             self._send_html(self.ui_body)
             return
+        if parsed.path == "/main.html":
+            self._send_file("main.html", "text/html")
+            return
         if parsed.path == "/search":
             self._handle_search(parsed.query)
             return
