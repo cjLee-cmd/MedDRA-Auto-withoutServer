@@ -1,1233 +1,480 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<title>MedDRA 28.1 한국어 증상 코드 조회</title>
-<style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  padding: 0;
-  font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-  background: #f5f7fb;
-  color: #1b254b;
-  min-height: 100vh;
-}
-.app-container {
-  display: flex;
-  min-height: 100vh;
-}
-.sidebar {
-  width: 380px;
-  background: linear-gradient(180deg, #ffffff, #f9fbff);
-  border-right: 1px solid #e0e7ff;
-  box-shadow: 4px 0 20px rgba(63, 99, 233, 0.08);
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-.sidebar::-webkit-scrollbar {
-  width: 8px;
-}
-.sidebar::-webkit-scrollbar-track {
-  background: rgba(160, 174, 212, 0.08);
-}
-.sidebar::-webkit-scrollbar-thumb {
-  background: rgba(70, 98, 255, 0.3);
-  border-radius: 4px;
-}
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(70, 98, 255, 0.5);
-}
-.sidebar-header {
-  padding: 2rem 1.5rem 1.5rem;
-  border-bottom: 1px solid #e0e7ff;
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
-}
-.sidebar-header h1 {
-  font-size: 1.5rem;
-  margin: 0 0 0.3rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: #1b254b;
-}
-.sidebar-header .subtitle {
-  margin: 0;
-  font-size: 0.85rem;
-  color: rgba(27, 37, 75, 0.5);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.sidebar-content {
-  flex: 1;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  overflow-y: auto;
-}
-main {
-  flex: 1;
-  padding: 2.5rem;
-  max-width: 1200px;
-  width: 100%;
-}
-.main-content-header {
-  margin-bottom: 2rem;
-}
-.main-content-header h2 {
-  font-size: 1.8rem;
-  margin: 0 0 0.5rem;
-  font-weight: 700;
-  color: #1b254b;
-}
-.main-content-header p {
-  margin: 0;
-  font-size: 1rem;
-  color: #7a8ac7;
-  font-weight: 500;
-}
-.group-box {
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid #e0e7ff;
-  box-shadow: 0 8px 20px rgba(63, 99, 233, 0.08);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s ease;
-}
-.sidebar .group-box {
-  box-shadow: 0 4px 12px rgba(63, 99, 233, 0.06);
-}
-.sidebar .group-box:hover {
-  box-shadow: 0 6px 16px rgba(63, 99, 233, 0.1);
-  transform: translateY(-2px);
-}
-.box-header {
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e0e7ff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.sidebar .box-header {
-  padding: 1rem 1.25rem;
-}
-.box-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1b254b;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.box-content {
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.sidebar .box-content {
-  padding: 1.25rem;
-}
-.document-content {
-  justify-content: space-between;
-}
-.document-box {
-  flex: 1;
-}
-.document-box .box-content {
-  flex: 1;
-  min-height: 0;
-}
-.selected-document {
-  background: #f9fbff;
-  border: 1px solid #e0e7ff;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-top: auto;
-}
-.selected-document[hidden] {
-  display: none;
-}
-.document-icon {
-  font-size: 1rem;
-}
-.document-name {
-  flex: 1;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #1b254b;
-}
-.document-status {
-  font-size: 0.75rem;
-  color: #1c7c54;
-  font-weight: 500;
-  background: rgba(28, 124, 84, 0.08);
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-}
-.upload-zone {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.upload-button {
-  width: 100%;
-  padding: 0.85rem 1.2rem;
-  border-radius: 10px;
-  border: none;
-  background: linear-gradient(135deg, #4662ff, #2d46d6);
-  color: #ffffff;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 20px rgba(70, 98, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-.upload-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(70, 98, 255, 0.3);
-}
-.upload-button:active {
-  transform: translateY(0);
-  box-shadow: 0 6px 18px rgba(70, 98, 255, 0.25);
-}
-.upload-hint {
-  text-align: center;
-  font-size: 0.8rem;
-  color: #a0aed4;
-  font-weight: 500;
-  padding: 0.5rem;
-  border-radius: 8px;
-  background: rgba(160, 174, 212, 0.05);
-}
-.upload-zone.drag-over .upload-button {
-  background: linear-gradient(135deg, #3f63e9, #2538c7);
-  box-shadow: 0 0 0 3px rgba(63, 99, 233, 0.15);
-}
-.disabled-box {
-  pointer-events: none;
-  position: relative;
-}
-.coming-soon-badge {
-  font-size: 0.7rem;
-  color: #f97316;
-  font-weight: 600;
-  background: rgba(249, 115, 22, 0.1);
-  padding: 0.3rem 0.65rem;
-  border-radius: 999px;
-}
-.disabled-zone {
-  cursor: not-allowed;
-}
-.disabled-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.4);
-  z-index: 10;
-}
-.disabled-message {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #7a8ac7;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 0.65rem 1.3rem;
-  border-radius: 8px;
-  border: 1px solid #cbd5f5;
-  box-shadow: 0 6px 16px rgba(63, 99, 233, 0.18);
-}
-.search-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.sidebar .search-layout {
-  gap: 1rem;
-}
-.search-inputs {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.input-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.options-row {
-  flex-direction: row;
-  align-items: center;
-  gap: 1.5rem;
-}
-.option-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-.search-buttons {
-  display: flex;
-  flex-direction: row;
-  gap: 0.75rem;
-  width: 100%;
-}
-.sidebar .search-buttons {
-  flex-direction: column;
-}
-.btn-block {
-  flex: 1;
-}
-label {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #4a5d8f;
-}
-input[type=text] {
-  width: 100%;
-  padding: 0.65rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid #cbd5f5;
-  font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-input[type=number] {
-  width: 70px;
-  padding: 0.55rem 0.7rem;
-  border-radius: 8px;
-  border: 1px solid #cbd5f5;
-  font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-input[type=text]:focus,
-input[type=number]:focus {
-  border-color: #3f63e9;
-  box-shadow: 0 0 0 3px rgba(63, 99, 233, 0.2);
-  outline: none;
-}
-input[type=checkbox] {
-  accent-color: #3f63e9;
-  width: 1rem;
-  height: 1rem;
-}
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(18, 24, 38, 0.55);
-  z-index: 999;
-  padding: 1.5rem;
-}
-.loading-overlay[hidden] {
-  display: none;
-}
-.loading-popup {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 1.8rem 2.1rem;
-  max-width: 420px;
-  width: 100%;
-  box-shadow: 0 24px 60px rgba(27, 37, 75, 0.25);
-  text-align: left;
-  color: #1b254b;
-}
-.loading-popup h2 {
-  margin: 0 0 0.85rem;
-  font-size: 1.25rem;
-}
-.loading-popup p {
-  margin: 0 0 0.85rem;
-  line-height: 1.5;
-  font-size: 0.95rem;
-  color: #2d3f7b;
-}
-.progress-track {
-  width: 100%;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(79, 103, 205, 0.18);
-  overflow: hidden;
-  margin-top: 0.4rem;
-}
-.progress-bar {
-  height: 100%;
-  width: 0;
-  background: linear-gradient(120deg, #4662ff, #2d46d6);
-  transition: width 0.25s ease;
-}
-.loading-status {
-  margin-top: 0.9rem;
-  font-size: 0.9rem;
-  color: #3b4c83;
-}
-.btn {
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.btn-primary {
-  background: linear-gradient(135deg, #4662ff, #2d46d6);
-  color: #ffffff;
-}
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 32px rgba(70, 98, 255, 0.25);
-}
-.btn-primary:active {
-  transform: translateY(0);
-  box-shadow: 0 8px 24px rgba(70, 98, 255, 0.3);
-}
-.btn-ai {
-  background: rgba(70, 98, 255, 0.12);
-  color: #2d46d6;
-  border: 1px solid rgba(70, 98, 255, 0.3);
-}
-.btn-ai:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(70, 98, 255, 0.22);
-}
-.btn-ai:active {
-  transform: translateY(0);
-  box-shadow: 0 10px 18px rgba(70, 98, 255, 0.24);
-}
-#results {
-  margin-top: 1.75rem;
-  display: grid;
-  gap: 1.25rem;
-}
-.ai-summary {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #44507a;
-  font-weight: 600;
-}
-.result-card {
-  background: #f9fbff;
-  border-radius: 22px;
-  border: 1px solid #dce4ff;
-  box-shadow: 0 20px 45px rgba(64, 87, 217, 0.15);
-  overflow: hidden;
-}
-.card-summary {
-  width: 100%;
-  border: none;
-  background: linear-gradient(120deg, #eef3ff, #f9fbff);
-  padding: 1.35rem 3.6rem 1.35rem 1.8rem;
-  text-align: left;
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  column-gap: 1rem;
-  row-gap: 0.4rem;
-  align-items: center;
-  position: relative;
-}
-.card-summary::after {
-  content: "";
-  position: absolute;
-  right: 1.9rem;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  border-right: 3px solid #7a8ac7;
-  border-bottom: 3px solid #7a8ac7;
-  transform: translateY(-50%) rotate(45deg);
-  transition: transform 0.2s ease;
-}
-.card-summary[aria-expanded="true"]::after {
-  transform: translateY(-50%) rotate(-135deg);
-}
-.llt-summary {
-  display: grid;
-  gap: 0.35rem;
-}
-.llt-top-row {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-.score-badge {
-  justify-self: start;
-  align-self: start;
-  background: rgba(45, 70, 214, 0.12);
-  color: #2d46d6;
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-}
-.term-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-.term-code {
-  color: #7a8ac7;
-  font-size: 0.92rem;
-}
-.status-indicator {
-  margin-left: auto;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1c7c54;
-  padding-right: 1rem;
-}
-.status-indicator.off {
-  color: #b91c1c;
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.chip-llt { background: #e7ecff; color: #3042a6; }
-.chip-pt { background: #dff7ff; color: #117b98; }
-.chip-hlt { background: #fee3dc; color: #d9480f; }
-.chip-hlgt { background: #ffeccb; color: #b45309; }
-.chip-soc { background: #e2f4df; color: #256029; }
-.badge-primary {
-  background: #f97316;
-  color: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 0.2rem 0.5rem;
-  display: inline-block;
-}
-.card-details {
-  border-top: 1px solid #e1e6ff;
-  padding: 1.35rem 1.7rem 1.6rem;
-  margin-left: 3.2rem;
-  border-left: 4px solid rgba(108, 140, 255, 0.28);
-  border-bottom-left-radius: 18px;
-  display: none;
-  gap: 1.1rem;
-  background: #ffffff;
-}
-.ai-reason {
-  margin-left: 1.6rem;
-  padding: 0.75rem 0.9rem;
-  border-radius: 12px;
-  background: rgba(45, 70, 214, 0.06);
-  color: #2d3f7b;
-  font-size: 0.85rem;
-  line-height: 1.45;
-}
-.card-summary[aria-expanded="true"] + .card-details {
-  display: grid;
-}
-.pt-block {
-  display: grid;
-  gap: 0.35rem;
-  margin-left: 1.6rem;
-}
-.pt-block .term-name {
-  font-size: 1.05rem;
-}
-.pt-meta {
-  color: #8b93b6;
-  font-size: 0.88rem;
-}
-.hierarchy-card {
-  border-radius: 18px;
-  border: 1px solid #e4ebff;
-  padding: 1.2rem 1.4rem 1.3rem;
-  position: relative;
-  background: #fdfdff;
-  box-shadow: 0 12px 36px rgba(78, 102, 215, 0.12);
-  margin-left: 1.6rem;
-}
-.hierarchy-card.is-primary {
-  border-color: #f97316;
-  box-shadow: 0 14px 40px rgba(249, 115, 22, 0.22);
-}
-.hierarchy-card.is-primary .badge-primary {
-  position: absolute;
-  top: 1rem;
-  right: 1.1rem;
-}
-.hierarchy-flow {
-  display: flex;
-  align-items: stretch;
-  gap: 1.1rem;
-}
-.node-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-}
-.node-point {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(71, 85, 182, 0.15);
-}
-.node-point.hlt { background: #f8b89b; }
-.node-point.hlgt { background: #ffd79f; }
-.node-point.soc { background: #a5df9d; }
-.node-connector {
-  flex: 1;
-  width: 2px;
-  background: linear-gradient(180deg, rgba(147, 170, 255, 0.4), rgba(147, 170, 255, 0));
-}
-.node-content {
-  display: grid;
-  gap: 0.95rem;
-}
-.node-row {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
-}
-.node-texts {
-  display: grid;
-  gap: 0.2rem;
-}
-.level-name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1d2b5b;
-}
-.level-code {
-  font-size: 0.85rem;
-  color: #7a8ac7;
-}
-.empty-hierarchy {
-  color: #7a8399;
-  font-size: 0.9rem;
-}
-.report-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-}
-.report-modal[hidden] {
-  display: none;
-}
-.modal-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(18, 24, 38, 0.65);
-}
-.modal-container {
-  position: relative;
-  background: #ffffff;
-  border-radius: 20px;
-  max-width: 850px;
-  width: 100%;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 28px 70px rgba(27, 37, 75, 0.35);
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e0e7ff;
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
-}
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #1b254b;
-}
-.modal-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: none;
-  background: rgba(122, 138, 199, 0.1);
-  color: #7a8ac7;
-  font-size: 1.5rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-.modal-close:hover {
-  background: rgba(185, 28, 28, 0.1);
-  color: #b91c1c;
-}
-.btn-auto-search {
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  border: none;
-  background: linear-gradient(135deg, #4662ff, #2d46d6);
-  color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 20px rgba(70, 98, 255, 0.25);
-}
-.btn-auto-search:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(70, 98, 255, 0.35);
-}
-.btn-auto-search:active {
-  transform: translateY(0);
-  box-shadow: 0 6px 18px rgba(70, 98, 255, 0.3);
-}
-.modal-content {
-  padding: 2rem;
-  overflow-y: auto;
-  flex: 1;
-}
-.info-section {
-  margin-bottom: 2rem;
-}
-.info-section:last-child {
-  margin-bottom: 0;
-}
-.section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1b254b;
-  margin: 0 0 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #e0e7ff;
-}
-.info-grid {
-  display: grid;
-  gap: 0.85rem;
-}
-.info-item {
-  display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: #f9fbff;
-  border-radius: 10px;
-  border: 1px solid #e0e7ff;
-}
-.info-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #4a5d8f;
-}
-.info-value {
-  font-size: 0.875rem;
-  color: #1b254b;
-  font-weight: 500;
-}
-.reaction-list, .drug-list, .lab-list {
-  display: grid;
-  gap: 1rem;
-}
-.reaction-card, .drug-card, .lab-card {
-  background: #ffffff;
-  border: 1px solid #e0e7ff;
-  border-radius: 12px;
-  padding: 1.2rem;
-  box-shadow: 0 8px 20px rgba(63, 99, 233, 0.08);
-}
-.card-header {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #2d46d6;
-  margin-bottom: 0.75rem;
-}
-.card-body {
-  display: grid;
-  gap: 0.5rem;
-}
-.card-row {
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-}
-.card-row-label {
-  font-weight: 600;
-  color: #7a8ac7;
-}
-.card-row-value {
-  color: #1b254b;
-  font-weight: 500;
-}
-/* 자동 검색 분할 패널 */
-#results.split-mode {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 1.5rem;
-  align-items: start;
-}
-.search-term-panel {
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1px solid #e0e7ff;
-  box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08);
-  overflow: hidden;
-  position: sticky;
-  top: 1rem;
-}
-.panel-header {
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
-  padding: 1.2rem 1.5rem;
-  border-bottom: 1px solid #e0e7ff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.panel-header h3 {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #1b254b;
-}
-.progress-summary {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #2d46d6;
-  background: rgba(45, 70, 214, 0.12);
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-}
-.panel-progress-bar {
-  width: 100%;
-  height: 6px;
-  background: rgba(63, 99, 233, 0.15);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-top: 1rem;
-}
-.panel-progress-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #4662ff, #2d46d6);
-  transition: width 0.3s ease;
-  border-radius: 999px;
-}
-.term-list {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: calc(100vh - 12rem);
-  overflow-y: auto;
-}
-.term-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  transition: all 0.2s ease;
-}
-.term-item.status-pending {
-  opacity: 0.6;
-  background: transparent;
-}
-.term-item.status-searching {
-  background: linear-gradient(120deg, #eef3ff, #f9fbff);
-  border-left: 4px solid #3f63e9;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-.term-item.status-completed {
-  background: #f9fbff;
-  border: 1px solid #e0e7ff;
-}
-.term-item.status-completed:hover {
-  background: #eef3ff;
-  transform: translateX(4px);
-}
-.term-item.status-error {
-  background: rgba(185, 28, 28, 0.08);
-  border-left: 4px solid #b91c1c;
-}
-.term-icon {
-  font-size: 1.1rem;
-  color: #7a8ac7;
-}
-.term-item.status-searching .term-icon {
-  color: #3f63e9;
-}
-.term-item.status-completed .term-icon {
-  color: #1c7c54;
-}
-.term-item.status-error .term-icon {
-  color: #b91c1c;
-}
-.term-text {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #1b254b;
-}
-.term-count {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #7a8ac7;
-}
-.spinner {
-  display: inline-block;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-.results-panel {
-  display: grid;
-  gap: 1.5rem;
-}
-.result-group {
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1px solid #e0e7ff;
-  box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08);
-  overflow: hidden;
-  animation: slideIn 0.3s ease-out;
-  transition: all 0.25s ease;
-}
-.result-group:hover {
-  box-shadow: 0 14px 38px rgba(63, 99, 233, 0.14);
-  transform: translateY(-2px);
-}
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.result-group.highlight {
-  animation: highlight 1.5s ease;
-}
-@keyframes highlight {
-  0% { background: transparent; }
-  20% { box-shadow: 0 0 0 4px rgba(70, 98, 255, 0.3); }
-  100% { background: transparent; box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08); }
-}
-.group-header {
-  background: linear-gradient(135deg, #f7faff, #ffffff);
-  border-radius: 18px 18px 0 0;
-  padding: 1.3rem 1.6rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  border-bottom: 2px solid #e0e7ff;
-  cursor: default;
-  transition: background 0.2s ease;
-}
-.group-term {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #2d46d6;
-  margin: 0;
-  text-shadow: 0 1px 2px rgba(45, 70, 214, 0.1);
-}
-.group-subtitle {
-  font-size: 0.88rem;
-  color: #7a8ac7;
-  font-weight: 500;
-  font-style: italic;
-}
-.group-count {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #ffffff;
-  background: linear-gradient(135deg, #4662ff, #2d46d6);
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  margin-left: auto;
-  box-shadow: 0 4px 12px rgba(70, 98, 255, 0.25);
-}
-.group-toggle {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 2px solid rgba(63, 99, 233, 0.2);
-  background: #ffffff;
-  color: #4662ff;
-  font-size: 1.3rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.25s ease;
-  box-shadow: 0 2px 8px rgba(63, 99, 233, 0.15);
-}
-.group-toggle:hover {
-  background: linear-gradient(135deg, #f7faff, #ffffff);
-  border-color: #4662ff;
-  transform: scale(1.1);
-  box-shadow: 0 4px 14px rgba(70, 98, 255, 0.3);
-}
-.group-toggle:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 6px rgba(70, 98, 255, 0.2);
-}
-.group-results {
-  padding: 1.5rem;
-  display: grid;
-  gap: 1.25rem;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-}
-.group-results[hidden] {
-  display: none;
-}
-.group-results .result-card {
-  box-shadow: 0 8px 20px rgba(63, 99, 233, 0.08);
-}
-.no-results {
-  text-align: center;
-  color: #7a8ac7;
-  padding: 2rem;
-  margin: 0;
-  font-size: 0.95rem;
-}
-.auto-search-summary {
-  background: linear-gradient(135deg, #e8f5e9, #f1f8f4);
-  border: 1px solid #a5df9d;
-  border-radius: 12px;
-  padding: 1.2rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-.auto-search-summary p {
-  margin: 0.3rem 0;
-  color: #1b254b;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-.auto-search-summary p:first-child {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1c7c54;
-}
-@media (max-width: 1200px) {
-  .app-container {
-    flex-direction: column;
-  }
-  .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    border-right: none;
-    border-bottom: 1px solid #e0e7ff;
-    box-shadow: 0 4px 20px rgba(63, 99, 233, 0.08);
-  }
-  .sidebar-content {
-    flex-direction: row;
-    overflow-x: auto;
-  }
-  .sidebar .group-box {
-    min-width: 350px;
-  }
-  main {
-    padding: 2rem;
-  }
-}
-@media (max-width: 968px) {
-  #results.split-mode {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-  }
-  .search-term-panel {
-    position: relative;
-    top: 0;
-  }
-  .term-list {
-    max-height: 300px;
-  }
-  .search-layout {
-    grid-template-columns: 1fr;
-  }
-  .search-buttons {
-    flex-direction: row;
-    width: 100%;
-  }
-  .btn-block {
-    flex: 1;
-  }
-}
-@media (max-width: 640px) {
-  main { padding: 1.5rem; }
-  .sidebar-header {
-    padding: 1.5rem 1.25rem;
-  }
-  .sidebar-header h1 {
-    font-size: 1.3rem;
-  }
-  .sidebar-content {
-    padding: 1rem;
-    flex-direction: column;
-  }
-  .sidebar .group-box {
-    min-width: unset;
-  }
-  .box-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  .box-content { padding: 1rem; }
-  .options-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  .search-buttons {
-    flex-direction: column;
-  }
-  input[type=number] { width: 100%; }
-  .card-summary { padding-right: 3.6rem; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEDGEN - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            width: 100%;
+            max-width: 400px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .login-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .login-header p {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .login-body {
+            padding: 40px 30px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .login-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            display: none;
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid #c33;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .login-footer {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .password-toggle {
+            position: relative;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 8px;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle-btn:hover {
+            color: #667eea;
+        }
+
+        /* 로딩 스피너 */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .login-button.loading .button-text {
+            display: none;
+        }
+
+        .login-button.loading .spinner {
+            display: block;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 480px) {
+            .login-container {
+                max-width: 100%;
+            }
+
+            .login-header {
+                padding: 30px 20px;
+            }
+
+            .login-header h1 {
+                font-size: 28px;
+            }
+
+            .login-body {
+                padding: 30px 20px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="app-container">
-  <!-- 사이드바 -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <h1>MEDGEN</h1>
-      <p class="subtitle">MedDRA 28.1 한국어</p>
-    </div>
-    <div class="sidebar-content">
-      <!-- 검색 문서 그룹박스 -->
-      <section class="group-box document-box">
-        <div class="box-header">
-          <h2 class="box-title"><span>📄</span>검색 문서</h2>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>MEDGEN</h1>
+            <p>MedDRA 28.1 한국어</p>
         </div>
-        <div class="box-content document-content">
-          <div class="upload-zone" id="upload-zone">
-            <button type="button" class="upload-button" id="upload-button">
-              <span>📄</span>
-              <span>파일 선택</span>
-            </button>
-            <p class="upload-hint">PDF 파일을 드래그하거나 클릭하여 업로드하세요</p>
-            <input type="file" id="file-upload" accept=".pdf" style="display: none;" />
-          </div>
-          <div class="selected-document" id="selected-document" hidden>
-            <span class="document-icon">📄</span>
-            <span class="document-name" id="document-name"></span>
-            <span class="document-status" id="document-status"></span>
-          </div>
-        </div>
-      </section>
 
-      <!-- 증상 및 용어 검색 그룹박스 -->
-      <section class="group-box search-box">
-        <div class="box-header">
-          <h2 class="box-title"><span>🔍</span>증상 및 용어 검색</h2>
-        </div>
-        <form id="search-form" class="box-content">
-          <div class="search-layout">
-            <div class="search-inputs">
-              <div class="input-row">
-                <label for="q">증상 또는 용어</label>
-                <input type="text" id="q" name="q" placeholder="예: 빈혈" required />
-              </div>
-              <div class="input-row options-row">
-                <div class="option-group">
-                  <label for="limit">결과 수</label>
-                  <input type="number" id="limit" name="limit" value="10" min="1" />
+        <div class="login-body">
+            <div id="errorMessage" class="error-message"></div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="username">아이디</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="아이디를 입력하세요"
+                        autocomplete="username"
+                        required
+                        autofocus
+                    >
                 </div>
-                <label class="checkbox-label">
-                  <input type="checkbox" id="inactive" />
-                  <span>비활성 용어 포함</span>
-                </label>
-              </div>
-            </div>
-            <div class="search-buttons">
-              <button type="submit" class="btn btn-primary btn-block">🔍 검색</button>
-              <button type="button" class="btn btn-ai btn-block" id="ai-search">✨ AI 검색</button>
-            </div>
-          </div>
-        </form>
-      </section>
-    </div>
-  </aside>
 
-  <!-- 메인 컨텐츠 -->
-  <main>
-    <div class="main-content-header">
-      <h2>증상 코드 조회 결과</h2>
-      <p>검색어를 입력하고 MedDRA 코드를 조회하세요</p>
-    </div>
-    <section id="results"></section>
-  </main>
-</div>
-<div id="loading-overlay" class="loading-overlay" hidden>
-  <div class="loading-popup">
-    <h2>데이터 로딩 중...</h2>
-    <p>최초 검색은 MedDRA 원본 데이터를 내려받느라 시간이 조금 걸릴 수 있습니다.</p>
-    <div class="progress-track" id="loading-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <div class="progress-bar" id="loading-progress"></div>
-    </div>
-    <p id="loading-status" class="loading-status">준비 중...</p>
-  </div>
-</div>
+                <div class="form-group">
+                    <label for="password">비밀번호</label>
+                    <div class="password-toggle">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="비밀번호를 입력하세요"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <button
+                            type="button"
+                            class="password-toggle-btn"
+                            onclick="togglePassword()"
+                            tabindex="-1"
+                        >
+                            표시
+                        </button>
+                    </div>
+                </div>
 
-<!-- CIOMS 보고서 정보 팝업 -->
-<div id="report-modal" class="report-modal" hidden>
-  <div class="modal-backdrop"></div>
-  <div class="modal-container">
-    <div class="modal-header">
-      <h2>📋 CIOMS 보고서 추출 정보</h2>
-      <button type="button" class="modal-close" id="modal-close" aria-label="닫기">✕</button>
+                <button type="submit" class="login-button" id="loginButton">
+                    <span class="button-text">로그인</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            © 2025 MEDGEN. All rights reserved.
+        </div>
     </div>
-    <div class="modal-content" id="modal-content">
-      <!-- JavaScript로 동적 생성 -->
-    </div>
-  </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>
-  // PDF.js worker 설정
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-</script>
-<script src="script.js"></script>
+
+    <script>
+        // 마스터 계정 정보 (실제 환경에서는 서버에서 검증해야 함)
+        const MASTER_CREDENTIALS = {
+            username: 'acuzen',
+            password: 'acuzen'
+        };
+
+        // 로그인 시도 횟수 제한
+        let loginAttempts = 0;
+        const MAX_ATTEMPTS = 5;
+        const LOCKOUT_TIME = 5 * 60 * 1000; // 5분
+
+        // 페이지 로드 시 이미 로그인되어 있는지 확인
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isLoggedIn()) {
+                redirectToMain();
+            }
+
+            // 잠금 상태 확인
+            checkLockout();
+        });
+
+        function handleLogin(event) {
+            event.preventDefault();
+
+            // 잠금 상태 확인
+            if (isLockedOut()) {
+                showError('너무 많은 로그인 시도로 인해 계정이 잠겼습니다. 5분 후 다시 시도해주세요.');
+                return;
+            }
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const loginButton = document.getElementById('loginButton');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // 에러 메시지 숨기기
+            errorMessage.classList.remove('show');
+
+            // 로딩 상태 시작
+            loginButton.classList.add('loading');
+            loginButton.disabled = true;
+
+            // 실제 환경에서는 서버 API 호출
+            setTimeout(() => {
+                if (username === MASTER_CREDENTIALS.username && password === MASTER_CREDENTIALS.password) {
+                    // 로그인 성공
+                    loginAttempts = 0;
+                    localStorage.removeItem('loginAttempts');
+                    localStorage.removeItem('lockoutTime');
+
+                    // 세션 저장 (보안을 위해 토큰 방식 권장)
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    sessionStorage.setItem('username', username);
+                    sessionStorage.setItem('loginTime', new Date().toISOString());
+
+                    // 로컬 스토리지에도 저장 (브라우저 닫아도 유지)
+                    localStorage.setItem('authToken', generateToken());
+                    localStorage.setItem('username', username);
+
+                    // 메인 페이지로 이동
+                    redirectToMain();
+                } else {
+                    // 로그인 실패
+                    loginAttempts++;
+                    localStorage.setItem('loginAttempts', loginAttempts.toString());
+
+                    if (loginAttempts >= MAX_ATTEMPTS) {
+                        const lockoutTime = Date.now() + LOCKOUT_TIME;
+                        localStorage.setItem('lockoutTime', lockoutTime.toString());
+                        showError(`로그인 실패 횟수 초과. 5분 후 다시 시도해주세요.`);
+                    } else {
+                        showError(`아이디 또는 비밀번호가 올바르지 않습니다. (${loginAttempts}/${MAX_ATTEMPTS})`);
+                    }
+
+                    // 로딩 상태 종료
+                    loginButton.classList.remove('loading');
+                    loginButton.disabled = false;
+
+                    // 비밀번호 필드 초기화
+                    document.getElementById('password').value = '';
+                    document.getElementById('password').focus();
+                }
+            }, 800); // 실제 서버 요청 시뮬레이션
+        }
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleBtn = document.querySelector('.password-toggle-btn');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.textContent = '숨김';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.textContent = '표시';
+            }
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function isLoggedIn() {
+            // 세션 스토리지 확인
+            const sessionLogin = sessionStorage.getItem('isLoggedIn');
+            if (sessionLogin === 'true') {
+                return true;
+            }
+
+            // 로컬 스토리지 확인 (자동 로그인)
+            const authToken = localStorage.getItem('authToken');
+            if (authToken && validateToken(authToken)) {
+                // 세션 스토리지에도 설정
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('username', localStorage.getItem('username'));
+                return true;
+            }
+
+            return false;
+        }
+
+        function redirectToMain() {
+            window.location.href = 'main.html';
+        }
+
+        function generateToken() {
+            // 간단한 토큰 생성 (실제 환경에서는 JWT 등 사용)
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 15);
+            return btoa(`${timestamp}:${random}:acuzen`);
+        }
+
+        function validateToken(token) {
+            try {
+                const decoded = atob(token);
+                const parts = decoded.split(':');
+                if (parts.length !== 3) return false;
+
+                const timestamp = parseInt(parts[0]);
+                const now = Date.now();
+
+                // 토큰 유효기간: 7일
+                const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+                return (now - timestamp) < SEVEN_DAYS;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function checkLockout() {
+            const attempts = parseInt(localStorage.getItem('loginAttempts') || '0');
+            loginAttempts = attempts;
+
+            if (isLockedOut()) {
+                const lockoutTime = parseInt(localStorage.getItem('lockoutTime'));
+                const remainingTime = Math.ceil((lockoutTime - Date.now()) / 1000 / 60);
+                showError(`너무 많은 로그인 시도로 인해 계정이 잠겼습니다. ${remainingTime}분 후 다시 시도해주세요.`);
+
+                document.getElementById('loginButton').disabled = true;
+
+                // 자동 해제 타이머
+                setTimeout(() => {
+                    localStorage.removeItem('loginAttempts');
+                    localStorage.removeItem('lockoutTime');
+                    location.reload();
+                }, lockoutTime - Date.now());
+            }
+        }
+
+        function isLockedOut() {
+            const lockoutTime = localStorage.getItem('lockoutTime');
+            if (!lockoutTime) return false;
+
+            const lockout = parseInt(lockoutTime);
+            if (Date.now() < lockout) {
+                return true;
+            }
+
+            // 잠금 해제
+            localStorage.removeItem('lockoutTime');
+            localStorage.removeItem('loginAttempts');
+            return false;
+        }
+
+        // Enter 키로 로그인
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !document.getElementById('loginButton').disabled) {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
 </body>
 </html>
