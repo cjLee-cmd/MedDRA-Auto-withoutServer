@@ -84,7 +84,7 @@ body {
 }
 .app-container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
 }
 .sidebar {
   width: 380px;
@@ -205,12 +205,15 @@ body {
   flex-direction: column;
   gap: 1.5rem;
   overflow-y: auto;
+  min-height: 0;
 }
 main {
   flex: 1;
   padding: 2.5rem;
   max-width: 1200px;
   width: 100%;
+  overflow-y: auto;
+  min-height: 0;
 }
 .main-content-header {
   margin-bottom: 2rem;
@@ -275,24 +278,33 @@ main {
   padding: 1.25rem;
 }
 .document-content {
-  justify-content: space-between;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 .document-box {
-  flex: 1;
+  flex: 0 0 auto;
+  max-height: 200px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .document-box .box-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 .selected-document {
-  background: #f9fbff;
-  border: 1px solid #e0e7ff;
+  background: var(--card-bg);
+  border: 1px solid var(--border-card);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
   gap: 0.65rem;
   margin-top: auto;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .selected-document[hidden] {
   display: none;
@@ -304,13 +316,13 @@ main {
   flex: 1;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #1b254b;
+  color: var(--text-primary);
 }
 .document-status {
   font-size: 0.75rem;
   color: #1c7c54;
   font-weight: 500;
-  background: rgba(28, 124, 84, 0.08);
+  background: rgba(28, 124, 84, 0.12);
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
 }
@@ -633,9 +645,10 @@ input[type=checkbox] {
 .term-name {
   font-size: 1.1rem;
   font-weight: 600;
+  color: var(--text-primary);
 }
 .term-code {
-  color: #7a8ac7;
+  color: var(--text-secondary);
   font-size: 0.92rem;
 }
 .status-indicator {
@@ -709,12 +722,13 @@ input[type=checkbox] {
 }
 .hierarchy-card {
   border-radius: 18px;
-  border: 1px solid #e4ebff;
+  border: 1px solid var(--border-card);
   padding: 1.2rem 1.4rem 1.3rem;
   position: relative;
-  background: #fdfdff;
-  box-shadow: 0 12px 36px rgba(78, 102, 215, 0.12);
+  background: var(--card-bg-alt);
+  box-shadow: var(--shadow-md);
   margin-left: 1.6rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .hierarchy-card.is-primary {
   border-color: #f97316;
@@ -766,14 +780,14 @@ input[type=checkbox] {
 .level-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #1d2b5b;
+  color: var(--text-primary);
 }
 .level-code {
   font-size: 0.85rem;
-  color: #7a8ac7;
+  color: var(--text-secondary);
 }
 .empty-hierarchy {
-  color: #7a8399;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 .report-modal {
@@ -946,27 +960,29 @@ input[type=checkbox] {
   align-items: start;
 }
 .search-term-panel {
-  background: #ffffff;
+  background: var(--bg-secondary);
   border-radius: 18px;
-  border: 1px solid #e0e7ff;
-  box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
   position: sticky;
   top: 1rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .panel-header {
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
   padding: 1.2rem 1.5rem;
-  border-bottom: 1px solid #e0e7ff;
+  border-bottom: 1px solid var(--border-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .panel-header h3 {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #1b254b;
+  color: var(--text-primary);
 }
 .progress-summary {
   font-size: 0.85rem;
@@ -1013,16 +1029,16 @@ input[type=checkbox] {
   background: transparent;
 }
 .term-item.status-searching {
-  background: linear-gradient(120deg, #eef3ff, #f9fbff);
-  border-left: 4px solid #3f63e9;
+  background: linear-gradient(120deg, var(--bg-tertiary), var(--card-bg));
+  border-left: 4px solid var(--accent-hover);
   animation: pulse 1.5s ease-in-out infinite;
 }
 .term-item.status-completed {
-  background: #f9fbff;
-  border: 1px solid #e0e7ff;
+  background: var(--card-bg);
+  border: 1px solid var(--border-card);
 }
 .term-item.status-completed:hover {
-  background: #eef3ff;
+  background: var(--bg-tertiary);
   transform: translateX(4px);
 }
 .term-item.status-error {
@@ -1031,10 +1047,10 @@ input[type=checkbox] {
 }
 .term-icon {
   font-size: 1.1rem;
-  color: #7a8ac7;
+  color: var(--text-secondary);
 }
 .term-item.status-searching .term-icon {
-  color: #3f63e9;
+  color: var(--accent-hover);
 }
 .term-item.status-completed .term-icon {
   color: #1c7c54;
@@ -1045,12 +1061,12 @@ input[type=checkbox] {
 .term-text {
   font-size: 0.95rem;
   font-weight: 500;
-  color: #1b254b;
+  color: var(--text-primary);
 }
 .term-count {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #7a8ac7;
+  color: var(--text-secondary);
 }
 .spinner {
   display: inline-block;
@@ -1069,16 +1085,16 @@ input[type=checkbox] {
   gap: 1.5rem;
 }
 .result-group {
-  background: #ffffff;
+  background: var(--bg-secondary);
   border-radius: 18px;
-  border: 1px solid #e0e7ff;
-  box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
   animation: slideIn 0.3s ease-out;
   transition: all 0.25s ease;
 }
 .result-group:hover {
-  box-shadow: 0 14px 38px rgba(63, 99, 233, 0.14);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
 }
 @keyframes slideIn {
@@ -1100,26 +1116,26 @@ input[type=checkbox] {
   100% { background: transparent; box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08); }
 }
 .group-header {
-  background: linear-gradient(135deg, #f7faff, #ffffff);
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
   border-radius: 18px 18px 0 0;
   padding: 1.3rem 1.6rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  border-bottom: 2px solid #e0e7ff;
+  border-bottom: 2px solid var(--border-primary);
   cursor: default;
   transition: background 0.2s ease;
 }
 .group-term {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #2d46d6;
+  color: var(--accent-secondary);
   margin: 0;
   text-shadow: 0 1px 2px rgba(45, 70, 214, 0.1);
 }
 .group-subtitle {
   font-size: 0.88rem;
-  color: #7a8ac7;
+  color: var(--text-secondary);
   font-weight: 500;
   font-style: italic;
 }
@@ -1138,8 +1154,8 @@ input[type=checkbox] {
   height: 36px;
   border-radius: 10px;
   border: 2px solid rgba(63, 99, 233, 0.2);
-  background: #ffffff;
-  color: #4662ff;
+  background: var(--bg-secondary);
+  color: var(--accent-primary);
   font-size: 1.3rem;
   font-weight: 700;
   cursor: pointer;
@@ -1150,8 +1166,8 @@ input[type=checkbox] {
   box-shadow: 0 2px 8px rgba(63, 99, 233, 0.15);
 }
 .group-toggle:hover {
-  background: linear-gradient(135deg, #f7faff, #ffffff);
-  border-color: #4662ff;
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  border-color: var(--accent-primary);
   transform: scale(1.1);
   box-shadow: 0 4px 14px rgba(70, 98, 255, 0.3);
 }
@@ -1173,7 +1189,7 @@ input[type=checkbox] {
 }
 .no-results {
   text-align: center;
-  color: #7a8ac7;
+  color: var(--text-secondary);
   padding: 2rem;
   margin: 0;
   font-size: 0.95rem;
@@ -1184,10 +1200,15 @@ input[type=checkbox] {
   border-radius: 12px;
   padding: 1.2rem 1.5rem;
   margin-bottom: 1.5rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+body.dark-mode .auto-search-summary {
+  background: linear-gradient(135deg, rgba(28, 124, 84, 0.15), rgba(28, 124, 84, 0.08));
+  border-color: rgba(165, 223, 157, 0.3);
 }
 .auto-search-summary p {
   margin: 0.3rem 0;
-  color: #1b254b;
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 500;
 }
@@ -1195,6 +1216,9 @@ input[type=checkbox] {
   font-size: 1.05rem;
   font-weight: 700;
   color: #1c7c54;
+}
+body.dark-mode .auto-search-summary p:first-child {
+  color: #4ade80;
 }
 @media (max-width: 1200px) {
   .app-container {
@@ -1383,7 +1407,7 @@ function initDarkMode() {
   <aside class="sidebar">
     <div class="sidebar-header">
       <div>
-        <h1>MEDGEN</h1>
+        <h1>ACUZEN</h1>
         <p class="subtitle">MedDRA 28.1 한국어</p>
       </div>
       <div class="sidebar-header-buttons">
