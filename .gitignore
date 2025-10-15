@@ -1,3 +1,49 @@
+# Python
 __pycache__/
-*.pyc
-codex/.env
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+*.pid
+meddra_server.log
+server.log
+server.pid
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Playwright
+node_modules/
+playwright-report/
+test-results/
+playwright/.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Archived files
+archived_files/

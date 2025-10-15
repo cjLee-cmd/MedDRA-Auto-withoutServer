@@ -1,5 +1,7 @@
 # MedDRA 28.1 한국어 데이터 활용 안내
 
+> **최신 개선 사항** (2025-01-14): 보안 강화 (XSS 방어, CSP 헤더), 구조화된 로깅, 단위 테스트, 데이터 검증 스크립트 추가. 자세한 내용은 [IMPROVEMENTS.md](IMPROVEMENTS.md) 참조.
+
 ## 1. 개요
 MedDRA(Medical Dictionary for Regulatory Activities) 28.1 한국어판 데이터 팩은 약물감시(PV) 업무에서 이상사례 증상과 코드를 연동하는 표준 용어집입니다. 모든 ASCII 파일은 달러(`$`) 구분자와 CRLF 줄바꿈을 사용하며 UTF-8 인코딩으로 제공됩니다. 데이터는 SOC(계통 기관)부터 LLT(최하위 용어)까지 다섯 단계 계층과 SMQ(Standardised MedDRA Query) 정보를 포함합니다.
 
