@@ -89,31 +89,32 @@ aiSearchButton.addEventListener('click', (event) => {
   runSearch({ approximate: true });
 });
 
-uploadZone.addEventListener('click', () => {
-  fileUpload.click();
-});
+// Upload zone functionality disabled for now
+// uploadZone.addEventListener('click', () => {
+//   fileUpload.click();
+// });
 
-uploadZone.addEventListener('dragover', (event) => {
-  event.preventDefault();
-  uploadZone.classList.add('drag-over');
-});
+// uploadZone.addEventListener('dragover', (event) => {
+//   event.preventDefault();
+//   uploadZone.classList.add('drag-over');
+// });
 
-uploadZone.addEventListener('dragleave', (event) => {
-  event.preventDefault();
-  uploadZone.classList.remove('drag-over');
-});
+// uploadZone.addEventListener('dragleave', (event) => {
+//   event.preventDefault();
+//   uploadZone.classList.remove('drag-over');
+// });
 
-uploadZone.addEventListener('drop', (event) => {
-  event.preventDefault();
-  uploadZone.classList.remove('drag-over');
+// uploadZone.addEventListener('drop', (event) => {
+//   event.preventDefault();
+//   uploadZone.classList.remove('drag-over');
 
-  const files = event.dataTransfer.files;
-  if (files.length > 0) {
-    fileUpload.files = files;
-    const changeEvent = new Event('change', { bubbles: true });
-    fileUpload.dispatchEvent(changeEvent);
-  }
-});
+//   const files = event.dataTransfer.files;
+//   if (files.length > 0) {
+//     fileUpload.files = files;
+//     const changeEvent = new Event('change', { bubbles: true });
+//     fileUpload.dispatchEvent(changeEvent);
+//   }
+// });
 
 fileUpload.addEventListener('change', async (event) => {
   const file = event.target.files[0];

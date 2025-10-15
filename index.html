@@ -149,6 +149,42 @@ h1 {
   color: #a0aed4;
   font-weight: 500;
 }
+.disabled-box {
+  pointer-events: none;
+  position: relative;
+}
+.coming-soon-badge {
+  font-size: 0.7rem;
+  color: #f97316;
+  font-weight: 600;
+  background: rgba(249, 115, 22, 0.1);
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+}
+.disabled-zone {
+  cursor: not-allowed;
+}
+.disabled-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.4);
+  z-index: 10;
+}
+.disabled-message {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #7a8ac7;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.65rem 1.3rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  box-shadow: 0 6px 16px rgba(63, 99, 233, 0.18);
+}
 .search-layout {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -562,13 +598,14 @@ input[type=checkbox] {
 
   <!-- 메인 그리드 레이아웃 -->
   <div class="main-grid">
-    <!-- 검색 문서 그룹박스 -->
-    <section class="group-box document-box">
+    <!-- 검색 문서 그룹박스 (비활성화) -->
+    <section class="group-box document-box disabled-box">
       <div class="box-header">
         <h2 class="box-title">📄 검색 문서</h2>
+        <span class="coming-soon-badge">준비 중</span>
       </div>
       <div class="box-content document-content">
-        <div class="upload-zone" id="upload-zone">
+        <div class="upload-zone disabled-zone">
           <div class="upload-content">
             <div class="upload-icon">📄</div>
             <div class="upload-text">
@@ -576,12 +613,10 @@ input[type=checkbox] {
               <p class="upload-formats">지원 형식: .pdf, .xlsx, .xls, .csv</p>
             </div>
           </div>
-          <input type="file" id="file-upload" accept=".pdf,.txt,.csv,.asc,.xlsx,.xls" hidden />
+          <input type="file" id="file-upload" accept=".pdf,.txt,.csv,.asc,.xlsx,.xls" hidden disabled />
         </div>
-        <div class="selected-document" id="selected-document" hidden>
-          <span class="document-icon">📄</span>
-          <span class="document-name" id="document-name"></span>
-          <span class="document-status" id="document-status"></span>
+        <div class="disabled-overlay">
+          <p class="disabled-message">🚧 곧 제공될 예정입니다</p>
         </div>
       </div>
     </section>
