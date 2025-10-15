@@ -17,6 +17,18 @@ const dataset = {
 
 let datasetPromise = null;
 let currentMode = 'exact';
+let isProcessingFile = false;
+
+// 자동 검색 상태 관리
+const autoSearchState = {
+  isRunning: false,
+  currentIndex: 0,
+  terms: [],
+  resultsByTerm: new Map(),
+  totalSearched: 0,
+  totalResults: 0,
+  ciomsData: null
+};
 
 const form = document.getElementById('search-form');
 const results = document.getElementById('results');
@@ -33,9 +45,28 @@ const loadingOverlay = document.getElementById('loading-overlay');
 const loadingProgressTrack = document.getElementById('loading-progress-track');
 const loadingProgressBar = document.getElementById('loading-progress');
 const loadingStatus = document.getElementById('loading-status');
+const reportModal = document.getElementById('report-modal');
+const modalContent = document.getElementById('modal-content');
+const modalClose = document.getElementById('modal-close');
 
 if (results) {
   results.innerHTML = '<p>증상 또는 용어를 입력한 후 검색을 눌러주세요.</p>';
+}
+
+// 모달 닫기 이벤트
+if (modalClose) {
+  modalClose.addEventListener('click', () => {
+    closeReportModal();
+  });
+}
+
+// 모달 배경 클릭으로 닫기
+if (reportModal) {
+  reportModal.addEventListener('click', (event) => {
+    if (event.target === reportModal || event.target.classList.contains('modal-backdrop')) {
+      closeReportModal();
+    }
+  });
 }
 
 function showLoadingOverlay(message = '데이터 로딩 중...', percent = 0) {
@@ -89,38 +120,427 @@ aiSearchButton.addEventListener('click', (event) => {
   runSearch({ approximate: true });
 });
 
-// Upload zone functionality disabled for now
-// uploadZone.addEventListener('click', () => {
-//   fileUpload.click();
-// });
+// 파일 선택 버튼 클릭 이벤트
+const uploadButton = document.getElementById('upload-button');
+if (uploadButton) {
+  uploadButton.addEventListener('click', () => {
+    if (isProcessingFile) {
+      return;
+    }
+    fileUpload.click();
+  });
+}
 
-// uploadZone.addEventListener('dragover', (event) => {
-//   event.preventDefault();
-//   uploadZone.classList.add('drag-over');
-// });
+uploadZone.addEventListener('dragover', (event) => {
+  event.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
 
-// uploadZone.addEventListener('dragleave', (event) => {
-//   event.preventDefault();
-//   uploadZone.classList.remove('drag-over');
-// });
+uploadZone.addEventListener('dragleave', (event) => {
+  event.preventDefault();
+  uploadZone.classList.remove('drag-over');
+});
 
-// uploadZone.addEventListener('drop', (event) => {
-//   event.preventDefault();
-//   uploadZone.classList.remove('drag-over');
+uploadZone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  uploadZone.classList.remove('drag-over');
 
-//   const files = event.dataTransfer.files;
-//   if (files.length > 0) {
-//     fileUpload.files = files;
-//     const changeEvent = new Event('change', { bubbles: true });
-//     fileUpload.dispatchEvent(changeEvent);
-//   }
-// });
+  if (isProcessingFile) {
+    return;
+  }
+
+  const files = event.dataTransfer.files;
+  if (files.length > 0) {
+    fileUpload.files = files;
+    const changeEvent = new Event('change', { bubbles: true });
+    fileUpload.dispatchEvent(changeEvent);
+  }
+});
+
+// PDF 텍스트 추출 함수
+async function extractTextFromPDF(file) {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+
+    return fullText;
+  } catch (error) {
+    console.error('PDF 텍스트 추출 실패:', error);
+    throw new Error('PDF 파일을 읽을 수 없습니다');
+  }
+}
+
+// 증상 키워드 추출 함수
+function extractSymptoms(text) {
+  const symptoms = [];
+  const lines = text.split('\n');
+
+  // 증상 관련 키워드 패턴
+  const symptomKeywords = ['증상', '소견', '진단', '호소', '불편', '통증', '이상', '질환'];
+  const symptomPatterns = [
+    /증상\s*[:：]\s*([^\n]+)/gi,
+    /주호소\s*[:：]\s*([^\n]+)/gi,
+    /현병력\s*[:：]\s*([^\n]+)/gi,
+    /진단명\s*[:：]\s*([^\n]+)/gi,
+  ];
+
+  // 패턴 기반 추출
+  for (const pattern of symptomPatterns) {
+    const matches = text.matchAll(pattern);
+    for (const match of matches) {
+      if (match[1]) {
+        symptoms.push(match[1].trim());
+      }
+    }
+  }
+
+  // 줄 단위로 증상 키워드 찾기
+  for (const line of lines) {
+    for (const keyword of symptomKeywords) {
+      if (line.includes(keyword)) {
+        const cleaned = line.replace(/[0-9\.\-\(\)]/g, '').trim();
+        if (cleaned.length > 2 && cleaned.length < 50) {
+          symptoms.push(cleaned);
+        }
+      }
+    }
+  }
+
+  // 중복 제거 및 정리
+  const uniqueSymptoms = [...new Set(symptoms)];
+  return uniqueSymptoms.slice(0, 5); // 최대 5개까지
+}
+
+// CIOMS 보고서 데이터 추출 함수
+function extractCIOMSData(text) {
+  const data = {
+    보고서_정보: {},
+    환자_정보: {},
+    반응_정보: {},
+    의심_약물_정보: [],
+    병용_약물_정보: [],
+    인과관계_평가: {},
+    주요_검사실_결과: []
+  };
+
+  // 보고서 유형 추출
+  if (text.includes('SUSPECT ADVERSE REACTION REPORT')) {
+    data.보고서_정보.Report_Type = 'SUSPECT ADVERSE REACTION REPORT (의심되는 유해 반응 보고서)';
+  }
+
+  // 제조사 관리번호 추출
+  const mfrControlMatch = text.match(/Manufacturer.*?Control.*?No[.:]?\s*([A-Z0-9\-]+)/i);
+  if (mfrControlMatch) {
+    data.보고서_정보.Manufacturer_Control_No = mfrControlMatch[1];
+  }
+
+  // 날짜 추출 (DD/MM/YYYY 형식)
+  const datePattern = /(\d{2}\/\d{2}\/\d{4})/g;
+  const dates = text.match(datePattern) || [];
+  if (dates.length > 0) {
+    data.보고서_정보.Date_Received_by_Manufacturer = dates[0];
+  }
+
+  // 환자 정보 추출
+  const initialMatch = text.match(/Initials?[:\s]+([A-Z]{1,3})/i);
+  if (initialMatch) {
+    data.환자_정보.Initials = initialMatch[1];
+  }
+
+  const countryMatch = text.match(/Country[:\s]+([A-Z]+)/i);
+  if (countryMatch) {
+    data.환자_정보.Country = countryMatch[1];
+  }
+
+  const dobMatch = text.match(/Date.*?Birth[:\s]+(\d{2}\/\d{2}\/\d{4})/i);
+  if (dobMatch) {
+    data.환자_정보.Date_of_Birth = dobMatch[1];
+  }
+
+  const ageMatch = text.match(/(\d+)\s*Years?/i);
+  if (ageMatch) {
+    data.환자_정보.Age = `${ageMatch[1]} Years`;
+  }
+
+  const sexMatch = text.match(/Sex[:\s]+(M|F|Male|Female)/i);
+  if (sexMatch) {
+    data.환자_정보.Sex = sexMatch[1];
+  }
+
+  // 유해 반응 추출 (한글/영문 매핑)
+  const reactionMap = {
+    'PARALYTIC ILEUS': '마비성 장폐색',
+    'HYPOVOLEMIC SHOCK': '저혈량성 쇼크',
+    'ACUTE RENAL FAILURE': '급성 신부전',
+    'RENAL FAILURE': '신부전',
+    'SHOCK': '쇼크',
+    'ILEUS': '장폐색'
+  };
+
+  data.반응_정보.Adverse_Reactions = [];
+
+  for (const [englishTerm, koreanTerm] of Object.entries(reactionMap)) {
+    const pattern = new RegExp(englishTerm, 'i');
+    if (pattern.test(text)) {
+      // 이미 추가된 반응인지 확인 (중복 방지)
+      const alreadyExists = data.반응_정보.Adverse_Reactions.some(
+        r => r.english === englishTerm || r.korean === koreanTerm
+      );
+
+      if (!alreadyExists) {
+        data.반응_정보.Adverse_Reactions.push({
+          english: englishTerm,
+          korean: koreanTerm
+        });
+      }
+    }
+  }
+
+  // 의심 약물 추출 (한글/영문 매핑)
+  const xelodaMatch = text.match(/Xeloda|Capecitabine/i);
+  if (xelodaMatch) {
+    data.의심_약물_정보.push({
+      drug_name: {
+        english: 'Xeloda [Capecitabine]',
+        korean: '젤로다 [카페시타빈]'
+      },
+      indication: {
+        english: 'RECTAL CANCER',
+        korean: '직장암'
+      }
+    });
+  }
+
+  const oxaliplatinMatch = text.match(/Eloxatin|Oxaliplatin/i);
+  if (oxaliplatinMatch) {
+    data.의심_약물_정보.push({
+      drug_name: {
+        english: 'Eloxatin [Oxaliplatin]',
+        korean: '엘록사틴 [옥살리플라틴]'
+      },
+      indication: {
+        english: 'RECTAL CANCER',
+        korean: '직장암'
+      }
+    });
+  }
+
+  return data;
+}
+
+// CIOMS 데이터를 JSON 파일로 저장하는 함수
+function downloadCIOMSJson(data, originalFileName) {
+  // 원본 파일명에서 확장자를 제거하고 .json 추가
+  const baseFileName = originalFileName.replace(/\.[^/.]+$/, '');
+  const jsonFileName = `${baseFileName}.json`;
+
+  // JSON 문자열로 변환 (들여쓰기 2칸)
+  const jsonString = JSON.stringify(data, null, 2);
+
+  // Blob 생성
+  const blob = new Blob([jsonString], { type: 'application/json' });
+
+  // 다운로드 링크 생성
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = jsonFileName;
+
+  // 다운로드 트리거
+  document.body.appendChild(a);
+  a.click();
+
+  // 정리
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  console.log(`✓ JSON 파일 저장 완료: ${jsonFileName}`);
+}
+
+// CIOMS 보고서 모달 표시 함수
+function showReportModal(data) {
+  if (!reportModal || !modalContent) return;
+
+  // CIOMS 데이터 저장
+  autoSearchState.ciomsData = data;
+
+  // 모달 컨텐츠 렌더링
+  const html = renderCIOMSData(data);
+  modalContent.innerHTML = html;
+
+  // 자동 검색 버튼 추가 (유해 반응이 있는 경우)
+  const hasReactions = data.반응_정보?.Adverse_Reactions?.length > 0;
+  if (hasReactions) {
+    addAutoSearchButton();
+  }
+
+  // 모달 표시
+  reportModal.removeAttribute('hidden');
+}
+
+// CIOMS 보고서 모달 닫기 함수
+function closeReportModal() {
+  if (!reportModal) return;
+  reportModal.setAttribute('hidden', '');
+
+  // 모달 닫을 때 파일 입력 초기화
+  if (fileUpload) {
+    fileUpload.value = '';
+  }
+}
+
+// CIOMS 데이터 HTML 렌더링 함수
+function renderCIOMSData(data) {
+  let html = '';
+
+  // 보고서 정보
+  if (Object.keys(data.보고서_정보).length > 0) {
+    html += '<div class="info-section">';
+    html += '<h3 class="section-title">📋 보고서 정보</h3>';
+    html += '<div class="info-grid">';
+    for (const [key, value] of Object.entries(data.보고서_정보)) {
+      if (value) {
+        html += `<div class="info-item">
+          <div class="info-label">${key.replace(/_/g, ' ')}</div>
+          <div class="info-value">${escapeHtml(value)}</div>
+        </div>`;
+      }
+    }
+    html += '</div></div>';
+  }
+
+  // 환자 정보
+  if (Object.keys(data.환자_정보).length > 0) {
+    html += '<div class="info-section">';
+    html += '<h3 class="section-title">👤 환자 정보</h3>';
+    html += '<div class="info-grid">';
+    for (const [key, value] of Object.entries(data.환자_정보)) {
+      if (value) {
+        html += `<div class="info-item">
+          <div class="info-label">${key.replace(/_/g, ' ')}</div>
+          <div class="info-value">${escapeHtml(value)}</div>
+        </div>`;
+      }
+    }
+    html += '</div></div>';
+  }
+
+  // 반응 정보
+  if (data.반응_정보.Adverse_Reactions && data.반응_정보.Adverse_Reactions.length > 0) {
+    html += '<div class="info-section">';
+    html += '<h3 class="section-title">⚠️ 유해 반응 정보</h3>';
+    html += '<div class="reaction-list">';
+    for (const reaction of data.반응_정보.Adverse_Reactions) {
+      html += `<div class="reaction-card">
+        <div class="card-header">${escapeHtml(reaction.korean)}</div>
+        <div class="card-body">
+          <div class="card-row">
+            <div class="card-row-label">영문</div>
+            <div class="card-row-value">${escapeHtml(reaction.english)}</div>
+          </div>
+          ${reaction.Outcome ? `<div class="card-row">
+            <div class="card-row-label">결과</div>
+            <div class="card-row-value">${escapeHtml(reaction.Outcome)}</div>
+          </div>` : ''}
+        </div>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+
+  // 의심 약물 정보
+  if (data.의심_약물_정보.length > 0) {
+    html += '<div class="info-section">';
+    html += '<h3 class="section-title">💊 의심 약물 정보</h3>';
+    html += '<div class="drug-list">';
+    for (const drug of data.의심_약물_정보) {
+      html += `<div class="drug-card">`;
+
+      // 약물명 (한글/영문)
+      if (drug.drug_name) {
+        html += `<div class="card-header">${escapeHtml(drug.drug_name.korean)}</div>
+        <div class="card-body">`;
+        html += `<div class="card-row">
+          <div class="card-row-label">영문</div>
+          <div class="card-row-value">${escapeHtml(drug.drug_name.english)}</div>
+        </div>`;
+      }
+
+      // 적응증 (한글/영문)
+      if (drug.indication) {
+        html += `<div class="card-row">
+          <div class="card-row-label">적응증</div>
+          <div class="card-row-value">${escapeHtml(drug.indication.korean)}</div>
+        </div>`;
+        html += `<div class="card-row">
+          <div class="card-row-label">영문 적응증</div>
+          <div class="card-row-value">${escapeHtml(drug.indication.english)}</div>
+        </div>`;
+      }
+
+      // 일일 용량 (있는 경우)
+      if (drug.daily_dose) {
+        html += `<div class="card-row">
+          <div class="card-row-label">일일 용량</div>
+          <div class="card-row-value">`;
+        if (typeof drug.daily_dose === 'object') {
+          html += `${escapeHtml(drug.daily_dose.korean)} (${escapeHtml(drug.daily_dose.english)})`;
+        } else {
+          html += escapeHtml(drug.daily_dose);
+        }
+        html += `</div></div>`;
+      }
+
+      // 투여 경로 (있는 경우)
+      if (drug.route) {
+        html += `<div class="card-row">
+          <div class="card-row-label">투여 경로</div>
+          <div class="card-row-value">`;
+        if (typeof drug.route === 'object') {
+          html += `${escapeHtml(drug.route.korean)} (${escapeHtml(drug.route.english)})`;
+        } else {
+          html += escapeHtml(drug.route);
+        }
+        html += `</div></div>`;
+      }
+
+      // 투여 기간 (있는 경우)
+      if (drug.therapy_dates) {
+        html += `<div class="card-row">
+          <div class="card-row-label">투여 기간</div>
+          <div class="card-row-value">${escapeHtml(drug.therapy_dates)}</div>
+        </div>`;
+      }
+
+      html += '</div></div>';
+    }
+    html += '</div></div>';
+  }
+
+  // 데이터가 없을 경우
+  if (html === '') {
+    html = '<p style="text-align: center; color: #7a8ac7; padding: 2rem;">추출된 CIOMS 데이터가 없습니다.</p>';
+  }
+
+  return html;
+}
 
 fileUpload.addEventListener('change', async (event) => {
   const file = event.target.files[0];
   if (!file) {
     return;
   }
+
+  // 파일 처리 중 플래그 설정
+  isProcessingFile = true;
 
   try {
     showLoadingOverlay(`${file.name} 파일 로딩 중...`, 10);
@@ -136,24 +556,65 @@ fileUpload.addEventListener('change', async (event) => {
       selectedDocument.hidden = false;
       hideLoadingOverlay();
       fileUpload.value = '';
+      isProcessingFile = false;
       return;
     }
 
     if (extension === 'pdf') {
-      updateLoadingOverlay('PDF 파일 처리 중...', 50);
+      updateLoadingOverlay('PDF 텍스트 추출 중...', 30);
 
-      await sleep(500);
+      // PDF에서 텍스트 추출
+      const fullText = await extractTextFromPDF(file);
 
-      dataset.loaded = true;
+      updateLoadingOverlay('증상 키워드 분석 중...', 60);
+
+      // 증상 키워드 추출
+      const symptoms = extractSymptoms(fullText);
+
+      updateLoadingOverlay('CIOMS 보고서 분석 중...', 70);
+
+      // CIOMS 데이터 추출
+      const ciomsData = extractCIOMSData(fullText);
+
+      // JSON 파일 저장
+      downloadCIOMSJson(ciomsData, file.name);
+
+      updateLoadingOverlay('검색창에 입력 중...', 90);
+
+      // 반응 정보에서 증상 개수 가져오기
+      const symptomCount = ciomsData.반응_정보?.Adverse_Reactions?.length || 0;
+
+      if (symptoms.length > 0) {
+        // 추출된 첫 번째 증상을 검색창에 자동 입력
+        queryInput.value = symptoms[0];
+      }
+
+      // 증상 개수 표시
       documentName.textContent = file.name;
-      documentStatus.textContent = '✓ 로드됨';
-      documentStatus.style.color = '#1c7c54';
-      documentStatus.style.background = 'rgba(28, 124, 84, 0.08)';
+      if (symptomCount > 0) {
+        documentStatus.textContent = `✓ ${symptomCount}개 증상`;
+        documentStatus.style.color = '#1c7c54';
+        documentStatus.style.background = 'rgba(28, 124, 84, 0.08)';
+      } else {
+        documentStatus.textContent = '⚠️ 증상 없음';
+        documentStatus.style.color = '#f59e0b';
+        documentStatus.style.background = 'rgba(245, 158, 11, 0.08)';
+      }
+
       selectedDocument.hidden = false;
 
-      updateLoadingOverlay('로딩 완료!', 100);
+      updateLoadingOverlay('완료!', 100);
       await sleep(300);
       hideLoadingOverlay();
+
+      // CIOMS 보고서 모달 표시
+      showReportModal(ciomsData);
+
+      // 검색창에 포커스 (사용자가 바로 수정하거나 검색할 수 있도록)
+      queryInput.focus();
+
+      // 파일 입력 초기화는 여기서 하지 않음 - 모달 닫을 때 또는 자동 검색 시작 시 처리
+      isProcessingFile = false;
       return;
     }
 
@@ -190,6 +651,7 @@ fileUpload.addEventListener('change', async (event) => {
 
     await sleep(300);
     hideLoadingOverlay();
+    isProcessingFile = false;
   } catch (error) {
     hideLoadingOverlay();
     documentName.textContent = file.name;
@@ -198,6 +660,7 @@ fileUpload.addEventListener('change', async (event) => {
     documentStatus.style.background = 'rgba(185, 28, 28, 0.08)';
     selectedDocument.hidden = false;
     fileUpload.value = '';
+    isProcessingFile = false;
   }
 });
 
@@ -654,6 +1117,321 @@ function renderHierarchyCard(hier) {
     </div>
   `;
 }
+
+// === 자동 검색 기능 ===
+
+// 자동 검색 버튼 추가
+function addAutoSearchButton() {
+  const modalHeader = reportModal.querySelector('.modal-header');
+  if (!modalHeader) return;
+
+  // 기존 버튼이 있으면 제거
+  const existingBtn = document.getElementById('start-auto-search');
+  if (existingBtn) {
+    existingBtn.remove();
+  }
+
+  // h2와 닫기 버튼 사이에 자동 검색 버튼 추가
+  const modalTitle = modalHeader.querySelector('h2');
+  const closeButton = modalHeader.querySelector('.modal-close');
+
+  if (modalTitle && closeButton) {
+    const autoSearchBtn = document.createElement('button');
+    autoSearchBtn.type = 'button';
+    autoSearchBtn.id = 'start-auto-search';
+    autoSearchBtn.className = 'btn-auto-search';
+    autoSearchBtn.innerHTML = '🔍 자동 검색 시작';
+
+    autoSearchBtn.addEventListener('click', () => {
+      closeReportModal();
+      startAutoSearch();
+    });
+
+    modalHeader.insertBefore(autoSearchBtn, closeButton);
+  }
+}
+
+// 자동 검색 시작
+async function startAutoSearch() {
+  if (!autoSearchState.ciomsData) return;
+
+  const reactions = autoSearchState.ciomsData.반응_정보?.Adverse_Reactions;
+  if (!reactions || reactions.length === 0) return;
+
+  // 파일 입력 초기화 (자동 검색 시작 시)
+  if (fileUpload) {
+    fileUpload.value = '';
+  }
+
+  // 초기화
+  autoSearchState.isRunning = true;
+  autoSearchState.currentIndex = 0;
+  autoSearchState.terms = reactions.map(reaction => ({
+    korean: reaction.korean,
+    english: reaction.english,
+    status: 'pending'
+  }));
+  autoSearchState.resultsByTerm = new Map();
+  autoSearchState.totalSearched = 0;
+  autoSearchState.totalResults = 0;
+
+  // 분할 패널 활성화
+  enableSplitMode();
+  renderSearchTermPanel();
+  renderEmptyResultsPanel();
+
+  // 순차 검색 시작
+  await searchNextTerm();
+}
+
+// 분할 패널 활성화
+function enableSplitMode() {
+  results.classList.add('split-mode');
+  results.innerHTML = '';
+}
+
+// 분할 패널 비활성화
+function disableSplitMode() {
+  results.classList.remove('split-mode');
+  results.innerHTML = '<p>증상 또는 용어를 입력한 후 검색을 눌러주세요.</p>';
+}
+
+// 검색어 패널 렌더링
+function renderSearchTermPanel() {
+  const panel = document.createElement('div');
+  panel.className = 'search-term-panel';
+  panel.innerHTML = `
+    <div class="panel-header">
+      <div style="width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h3>검색 진행 상태</h3>
+          <div class="progress-summary">0 / ${autoSearchState.terms.length} 완료</div>
+        </div>
+        <div class="panel-progress-bar">
+          <div class="panel-progress-fill" id="panel-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div class="term-list">
+      ${autoSearchState.terms.map((term, index) => `
+        <div class="term-item status-${term.status}" data-index="${index}">
+          <span class="term-icon">${getTermIcon(term.status)}</span>
+          <span class="term-text">${escapeHtml(term.korean)}</span>
+          <span class="term-count">${getTermCountText(term.status)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  results.appendChild(panel);
+}
+
+// 빈 결과 패널 렌더링
+function renderEmptyResultsPanel() {
+  const panel = document.createElement('div');
+  panel.className = 'results-panel';
+  results.appendChild(panel);
+}
+
+// 검색어 상태 아이콘
+function getTermIcon(status) {
+  switch (status) {
+    case 'pending': return '○';
+    case 'searching': return '<span class="spinner">⟳</span>';
+    case 'completed': return '✓';
+    case 'error': return '✗';
+    default: return '○';
+  }
+}
+
+// 검색어 카운트 텍스트
+function getTermCountText(status) {
+  switch (status) {
+    case 'pending': return '대기중';
+    case 'searching': return '검색중...';
+    case 'error': return '실패';
+    default: return '';
+  }
+}
+
+// 순차 검색 실행
+async function searchNextTerm() {
+  // 종료 조건
+  if (autoSearchState.currentIndex >= autoSearchState.terms.length) {
+    finishAutoSearch();
+    return;
+  }
+
+  const termObj = autoSearchState.terms[autoSearchState.currentIndex];
+
+  // 상태 업데이트: searching
+  termObj.status = 'searching';
+  updateTermStatus(autoSearchState.currentIndex, 'searching');
+
+  try {
+    // 데이터셋 로딩
+    await ensureDataset();
+
+    // 검색 실행
+    const limit = 10;
+    const includeInactive = false;
+    const searchResult = searchExact(termObj.korean, limit, includeInactive);
+
+    // 결과 저장
+    autoSearchState.resultsByTerm.set(termObj.korean, searchResult.results);
+    autoSearchState.totalSearched++;
+    autoSearchState.totalResults += searchResult.results.length;
+
+    // 상태 업데이트: completed
+    termObj.status = 'completed';
+    updateTermStatus(autoSearchState.currentIndex, 'completed', searchResult.results.length);
+
+    // 결과 패널에 추가
+    addResultGroup(termObj.korean, termObj.english, searchResult.results);
+
+  } catch (error) {
+    console.error(`검색 실패: ${termObj.korean}`, error);
+    termObj.status = 'error';
+    updateTermStatus(autoSearchState.currentIndex, 'error', 0);
+  }
+
+  // 다음 검색어로 이동
+  autoSearchState.currentIndex++;
+
+  // 약간의 딜레이 (UX 개선)
+  await sleep(300);
+
+  // 재귀 호출
+  await searchNextTerm();
+}
+
+// 검색어 상태 업데이트
+function updateTermStatus(index, status, resultCount = 0) {
+  const termItem = document.querySelector(`.term-item[data-index="${index}"]`);
+  if (!termItem) return;
+
+  // 상태 클래스 업데이트
+  termItem.className = `term-item status-${status}`;
+
+  // 아이콘 및 카운트 업데이트
+  const iconEl = termItem.querySelector('.term-icon');
+  const countEl = termItem.querySelector('.term-count');
+
+  if (iconEl) {
+    iconEl.innerHTML = getTermIcon(status);
+  }
+
+  if (countEl) {
+    if (status === 'completed') {
+      countEl.textContent = `${resultCount}개`;
+    } else if (status === 'error') {
+      countEl.textContent = '실패';
+    } else {
+      countEl.textContent = getTermCountText(status);
+    }
+  }
+
+  // 진행률 업데이트
+  updateProgressSummary();
+
+  // 완료된 항목은 클릭 가능하도록 이벤트 추가
+  if (status === 'completed') {
+    termItem.style.cursor = 'pointer';
+    termItem.addEventListener('click', () => {
+      scrollToResultGroup(autoSearchState.terms[index].korean);
+    });
+  }
+}
+
+// 진행률 업데이트
+function updateProgressSummary() {
+  const progressEl = document.querySelector('.progress-summary');
+  if (!progressEl) return;
+
+  const completed = autoSearchState.terms.filter(t => t.status === 'completed').length;
+  progressEl.textContent = `${completed} / ${autoSearchState.terms.length} 완료`;
+
+  // 프로그레스 바 업데이트
+  const progressFill = document.getElementById('panel-progress-fill');
+  if (progressFill) {
+    const percentage = (completed / autoSearchState.terms.length) * 100;
+    progressFill.style.width = `${percentage}%`;
+  }
+}
+
+// 결과 그룹 추가
+function addResultGroup(koreanTerm, englishTerm, results) {
+  const resultsPanel = document.querySelector('.results-panel');
+  if (!resultsPanel) return;
+
+  const groupDiv = document.createElement('div');
+  groupDiv.className = 'result-group';
+  groupDiv.setAttribute('data-term', koreanTerm);
+
+  const headerHtml = `
+    <div class="group-header">
+      <h4 class="group-term">${escapeHtml(koreanTerm)}</h4>
+      <span class="group-subtitle">${escapeHtml(englishTerm)}</span>
+      <span class="group-count">${results.length}개 결과</span>
+      <button class="group-toggle" type="button" aria-expanded="true">−</button>
+    </div>
+  `;
+
+  const resultsHtml = results.length === 0
+    ? '<div class="group-results"><p class="no-results">검색 결과가 없습니다.</p></div>'
+    : `<div class="group-results">${results.map((item, index) => createResultCard(item, index)).join('')}</div>`;
+
+  groupDiv.innerHTML = headerHtml + resultsHtml;
+  resultsPanel.appendChild(groupDiv);
+
+  // 토글 버튼 이벤트
+  const toggleBtn = groupDiv.querySelector('.group-toggle');
+  const groupResults = groupDiv.querySelector('.group-results');
+
+  if (toggleBtn && groupResults) {
+    toggleBtn.addEventListener('click', () => {
+      const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+      toggleBtn.setAttribute('aria-expanded', !isExpanded);
+      toggleBtn.textContent = isExpanded ? '+' : '−';
+      groupResults.hidden = isExpanded;
+    });
+  }
+}
+
+// 결과 그룹으로 스크롤
+function scrollToResultGroup(koreanTerm) {
+  const targetGroup = document.querySelector(`.result-group[data-term="${koreanTerm}"]`);
+  if (!targetGroup) return;
+
+  targetGroup.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+
+  // 하이라이트 효과
+  targetGroup.classList.add('highlight');
+  setTimeout(() => {
+    targetGroup.classList.remove('highlight');
+  }, 1500);
+}
+
+// 자동 검색 완료
+function finishAutoSearch() {
+  autoSearchState.isRunning = false;
+
+  // 완료 메시지 추가
+  const resultsPanel = document.querySelector('.results-panel');
+  if (resultsPanel) {
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'auto-search-summary';
+    summaryDiv.innerHTML = `
+      <p>✅ 자동 검색이 완료되었습니다.</p>
+      <p>총 ${autoSearchState.terms.length}개 검색어에서 ${autoSearchState.totalResults}개 결과를 찾았습니다.</p>
+    `;
+    resultsPanel.insertBefore(summaryDiv, resultsPanel.firstChild);
+  }
+}
+
+// === 자동 검색 기능 끝 ===
 
 function escapeHtml(value) {
   return String(value || '')

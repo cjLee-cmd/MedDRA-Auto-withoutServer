@@ -107,47 +107,47 @@ h1 {
   border-radius: 999px;
 }
 .upload-zone {
-  border: 2px dashed #cbd5f5;
-  border-radius: 12px;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.upload-button {
+  width: 100%;
+  padding: 0.85rem 1.2rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #4662ff, #2d46d6);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-.upload-zone:hover {
-  border-color: #3f63e9;
-  background: linear-gradient(135deg, #eef3ff, #f9fbff);
-}
-.upload-zone.drag-over {
-  border-color: #3f63e9;
-  background: #eef3ff;
-  box-shadow: 0 0 0 3px rgba(63, 99, 233, 0.15);
-}
-.upload-content {
+  box-shadow: 0 8px 20px rgba(70, 98, 255, 0.2);
   display: flex;
   align-items: center;
-  gap: 1rem;
-  text-align: left;
+  justify-content: center;
+  gap: 0.5rem;
 }
-.upload-icon {
-  font-size: 2rem;
-  flex-shrink: 0;
+.upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(70, 98, 255, 0.3);
 }
-.upload-text {
-  flex: 1;
+.upload-button:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 18px rgba(70, 98, 255, 0.25);
 }
-.upload-title {
-  margin: 0 0 0.4rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1b254b;
-  line-height: 1.4;
-}
-.upload-formats {
-  margin: 0;
-  font-size: 0.75rem;
+.upload-hint {
+  text-align: center;
+  font-size: 0.8rem;
   color: #a0aed4;
   font-weight: 500;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(160, 174, 212, 0.05);
+}
+.upload-zone.drag-over .upload-button {
+  background: linear-gradient(135deg, #3f63e9, #2538c7);
+  box-shadow: 0 0 0 3px rgba(63, 99, 233, 0.15);
 }
 .disabled-box {
   pointer-events: none;
@@ -554,6 +554,435 @@ input[type=checkbox] {
   color: #7a8399;
   font-size: 0.9rem;
 }
+.report-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.report-modal[hidden] {
+  display: none;
+}
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 24, 38, 0.65);
+}
+.modal-container {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 850px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 28px 70px rgba(27, 37, 75, 0.35);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e0e7ff;
+  background: linear-gradient(135deg, #f9fbff, #ffffff);
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1b254b;
+}
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(122, 138, 199, 0.1);
+  color: #7a8ac7;
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.modal-close:hover {
+  background: rgba(185, 28, 28, 0.1);
+  color: #b91c1c;
+}
+.btn-auto-search {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #4662ff, #2d46d6);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 20px rgba(70, 98, 255, 0.25);
+}
+.btn-auto-search:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(70, 98, 255, 0.35);
+}
+.btn-auto-search:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 18px rgba(70, 98, 255, 0.3);
+}
+.modal-content {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+.info-section {
+  margin-bottom: 2rem;
+}
+.info-section:last-child {
+  margin-bottom: 0;
+}
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1b254b;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0e7ff;
+}
+.info-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+.info-item {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f9fbff;
+  border-radius: 10px;
+  border: 1px solid #e0e7ff;
+}
+.info-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4a5d8f;
+}
+.info-value {
+  font-size: 0.875rem;
+  color: #1b254b;
+  font-weight: 500;
+}
+.reaction-list, .drug-list, .lab-list {
+  display: grid;
+  gap: 1rem;
+}
+.reaction-card, .drug-card, .lab-card {
+  background: #ffffff;
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 1.2rem;
+  box-shadow: 0 8px 20px rgba(63, 99, 233, 0.08);
+}
+.card-header {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d46d6;
+  margin-bottom: 0.75rem;
+}
+.card-body {
+  display: grid;
+  gap: 0.5rem;
+}
+.card-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+.card-row-label {
+  font-weight: 600;
+  color: #7a8ac7;
+}
+.card-row-value {
+  color: #1b254b;
+  font-weight: 500;
+}
+/* 자동 검색 분할 패널 */
+#results.split-mode {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+.search-term-panel {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08);
+  overflow: hidden;
+  position: sticky;
+  top: 1rem;
+}
+.panel-header {
+  background: linear-gradient(135deg, #f9fbff, #ffffff);
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #e0e7ff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1b254b;
+}
+.progress-summary {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2d46d6;
+  background: rgba(45, 70, 214, 0.12);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+.panel-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(63, 99, 233, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+.panel-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4662ff, #2d46d6);
+  transition: width 0.3s ease;
+  border-radius: 999px;
+}
+.term-list {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+}
+.term-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+.term-item.status-pending {
+  opacity: 0.6;
+  background: transparent;
+}
+.term-item.status-searching {
+  background: linear-gradient(120deg, #eef3ff, #f9fbff);
+  border-left: 4px solid #3f63e9;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.term-item.status-completed {
+  background: #f9fbff;
+  border: 1px solid #e0e7ff;
+}
+.term-item.status-completed:hover {
+  background: #eef3ff;
+  transform: translateX(4px);
+}
+.term-item.status-error {
+  background: rgba(185, 28, 28, 0.08);
+  border-left: 4px solid #b91c1c;
+}
+.term-icon {
+  font-size: 1.1rem;
+  color: #7a8ac7;
+}
+.term-item.status-searching .term-icon {
+  color: #3f63e9;
+}
+.term-item.status-completed .term-icon {
+  color: #1c7c54;
+}
+.term-item.status-error .term-icon {
+  color: #b91c1c;
+}
+.term-text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1b254b;
+}
+.term-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #7a8ac7;
+}
+.spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.results-panel {
+  display: grid;
+  gap: 1.5rem;
+}
+.result-group {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08);
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+  transition: all 0.25s ease;
+}
+.result-group:hover {
+  box-shadow: 0 14px 38px rgba(63, 99, 233, 0.14);
+  transform: translateY(-2px);
+}
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.result-group.highlight {
+  animation: highlight 1.5s ease;
+}
+@keyframes highlight {
+  0% { background: transparent; }
+  20% { box-shadow: 0 0 0 4px rgba(70, 98, 255, 0.3); }
+  100% { background: transparent; box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08); }
+}
+.group-header {
+  background: linear-gradient(135deg, #f7faff, #ffffff);
+  border-radius: 18px 18px 0 0;
+  padding: 1.3rem 1.6rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 2px solid #e0e7ff;
+  cursor: default;
+  transition: background 0.2s ease;
+}
+.group-term {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2d46d6;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(45, 70, 214, 0.1);
+}
+.group-subtitle {
+  font-size: 0.88rem;
+  color: #7a8ac7;
+  font-weight: 500;
+  font-style: italic;
+}
+.group-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #4662ff, #2d46d6);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  margin-left: auto;
+  box-shadow: 0 4px 12px rgba(70, 98, 255, 0.25);
+}
+.group-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2px solid rgba(63, 99, 233, 0.2);
+  background: #ffffff;
+  color: #4662ff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(63, 99, 233, 0.15);
+}
+.group-toggle:hover {
+  background: linear-gradient(135deg, #f7faff, #ffffff);
+  border-color: #4662ff;
+  transform: scale(1.1);
+  box-shadow: 0 4px 14px rgba(70, 98, 255, 0.3);
+}
+.group-toggle:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 6px rgba(70, 98, 255, 0.2);
+}
+.group-results {
+  padding: 1.5rem;
+  display: grid;
+  gap: 1.25rem;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+.group-results[hidden] {
+  display: none;
+}
+.group-results .result-card {
+  box-shadow: 0 8px 20px rgba(63, 99, 233, 0.08);
+}
+.no-results {
+  text-align: center;
+  color: #7a8ac7;
+  padding: 2rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.auto-search-summary {
+  background: linear-gradient(135deg, #e8f5e9, #f1f8f4);
+  border: 1px solid #a5df9d;
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.auto-search-summary p {
+  margin: 0.3rem 0;
+  color: #1b254b;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.auto-search-summary p:first-child {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1c7c54;
+}
+@media (max-width: 968px) {
+  #results.split-mode {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .search-term-panel {
+    position: relative;
+    top: 0;
+  }
+  .term-list {
+    max-height: 300px;
+  }
+}
 @media (max-width: 968px) {
   .main-grid {
     grid-template-columns: 1fr;
@@ -598,25 +1027,24 @@ input[type=checkbox] {
 
   <!-- 메인 그리드 레이아웃 -->
   <div class="main-grid">
-    <!-- 검색 문서 그룹박스 (비활성화) -->
-    <section class="group-box document-box disabled-box">
+    <!-- 검색 문서 그룹박스 -->
+    <section class="group-box document-box">
       <div class="box-header">
         <h2 class="box-title">📄 검색 문서</h2>
-        <span class="coming-soon-badge">준비 중</span>
       </div>
       <div class="box-content document-content">
-        <div class="upload-zone disabled-zone">
-          <div class="upload-content">
-            <div class="upload-icon">📄</div>
-            <div class="upload-text">
-              <p class="upload-title">PDF, Excel, CSV 파일을 드래그하거나 클릭하여 업로드하세요.</p>
-              <p class="upload-formats">지원 형식: .pdf, .xlsx, .xls, .csv</p>
-            </div>
-          </div>
-          <input type="file" id="file-upload" accept=".pdf,.txt,.csv,.asc,.xlsx,.xls" hidden disabled />
+        <div class="upload-zone" id="upload-zone">
+          <button type="button" class="upload-button" id="upload-button">
+            <span>📄</span>
+            <span>파일 선택</span>
+          </button>
+          <p class="upload-hint">PDF 파일을 드래그하거나 클릭하여 업로드하세요</p>
+          <input type="file" id="file-upload" accept=".pdf" style="display: none;" />
         </div>
-        <div class="disabled-overlay">
-          <p class="disabled-message">🚧 곧 제공될 예정입니다</p>
+        <div class="selected-document" id="selected-document" hidden>
+          <span class="document-icon">📄</span>
+          <span class="document-name" id="document-name"></span>
+          <span class="document-status" id="document-status"></span>
         </div>
       </div>
     </section>
@@ -664,6 +1092,25 @@ input[type=checkbox] {
     <p id="loading-status" class="loading-status">준비 중...</p>
   </div>
 </div>
+
+<!-- CIOMS 보고서 정보 팝업 -->
+<div id="report-modal" class="report-modal" hidden>
+  <div class="modal-backdrop"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>📋 CIOMS 보고서 추출 정보</h2>
+      <button type="button" class="modal-close" id="modal-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-content" id="modal-content">
+      <!-- JavaScript로 동적 생성 -->
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  // PDF.js worker 설정
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
 <script src="script.js"></script>
 </body>
 </html>
