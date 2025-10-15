@@ -4,14 +4,83 @@
 <meta charset="utf-8" />
 <title>MedDRA 28.1 한국어 증상 코드 조회</title>
 <style>
+:root {
+  /* Light mode colors */
+  --bg-primary: #f5f7fb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f9fbff;
+  --bg-gradient-start: #ffffff;
+  --bg-gradient-end: #f9fbff;
+
+  --text-primary: #1b254b;
+  --text-secondary: #7a8ac7;
+  --text-tertiary: #4a5d8f;
+  --text-muted: rgba(27, 37, 75, 0.5);
+
+  --border-primary: #e0e7ff;
+  --border-secondary: #cbd5f5;
+  --border-card: #dce4ff;
+
+  --shadow-sm: 0 4px 12px rgba(63, 99, 233, 0.06);
+  --shadow-md: 0 8px 20px rgba(63, 99, 233, 0.08);
+  --shadow-lg: 0 20px 45px rgba(64, 87, 217, 0.15);
+
+  --accent-primary: #4662ff;
+  --accent-secondary: #2d46d6;
+  --accent-hover: #3f63e9;
+
+  --card-bg: #f9fbff;
+  --card-bg-alt: #fdfdff;
+  --input-bg: #f8f9fa;
+
+  --scrollbar-track: rgba(160, 174, 212, 0.08);
+  --scrollbar-thumb: rgba(70, 98, 255, 0.3);
+  --scrollbar-thumb-hover: rgba(70, 98, 255, 0.5);
+}
+
+body.dark-mode {
+  /* Dark mode colors */
+  --bg-primary: #0f1419;
+  --bg-secondary: #1a1f2e;
+  --bg-tertiary: #232936;
+  --bg-gradient-start: #1a1f2e;
+  --bg-gradient-end: #232936;
+
+  --text-primary: #e4e7eb;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #d1d5db;
+  --text-muted: rgba(228, 231, 235, 0.5);
+
+  --border-primary: #2d3748;
+  --border-secondary: #374151;
+  --border-card: #374151;
+
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.5);
+
+  --accent-primary: #5b7cff;
+  --accent-secondary: #4662ff;
+  --accent-hover: #7a95ff;
+
+  --card-bg: #232936;
+  --card-bg-alt: #1a1f2e;
+  --input-bg: #232936;
+
+  --scrollbar-track: rgba(55, 65, 81, 0.3);
+  --scrollbar-thumb: rgba(107, 114, 128, 0.5);
+  --scrollbar-thumb-hover: rgba(107, 114, 128, 0.7);
+}
+
 * { box-sizing: border-box; }
 body {
   margin: 0;
   padding: 0;
   font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-  background: #f5f7fb;
-  color: #1b254b;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 .app-container {
   display: flex;
@@ -19,48 +88,50 @@ body {
 }
 .sidebar {
   width: 380px;
-  background: linear-gradient(180deg, #ffffff, #f9fbff);
-  border-right: 1px solid #e0e7ff;
-  box-shadow: 4px 0 20px rgba(63, 99, 233, 0.08);
+  background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  border-right: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .sidebar::-webkit-scrollbar {
   width: 8px;
 }
 .sidebar::-webkit-scrollbar-track {
-  background: rgba(160, 174, 212, 0.08);
+  background: var(--scrollbar-track);
 }
 .sidebar::-webkit-scrollbar-thumb {
-  background: rgba(70, 98, 255, 0.3);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 .sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(70, 98, 255, 0.5);
+  background: var(--scrollbar-thumb-hover);
 }
 .sidebar-header {
   padding: 2rem 1.5rem 1.5rem;
-  border-bottom: 1px solid #e0e7ff;
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
+  border-bottom: 1px solid var(--border-primary);
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .sidebar-header h1 {
   font-size: 1.5rem;
   margin: 0 0 0.3rem;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #1b254b;
+  color: var(--text-primary);
 }
 .sidebar-header .subtitle {
   margin: 0;
   font-size: 0.85rem;
-  color: rgba(27, 37, 75, 0.5);
+  color: var(--text-muted);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -98,6 +169,30 @@ body {
   font-weight: 700;
   letter-spacing: 0.02em;
 }
+.dark-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 0.5rem;
+}
+.dark-mode-toggle:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(70, 98, 255, 0.2);
+}
+.dark-mode-toggle:active {
+  transform: translateY(0);
+}
 .sidebar-content {
   flex: 1;
   padding: 1.5rem;
@@ -119,19 +214,19 @@ main {
   font-size: 1.8rem;
   margin: 0 0 0.5rem;
   font-weight: 700;
-  color: #1b254b;
+  color: var(--text-primary);
 }
 .main-content-header p {
   margin: 0;
   font-size: 1rem;
-  color: #7a8ac7;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 .group-box {
-  background: #ffffff;
+  background: var(--bg-secondary);
   border-radius: 16px;
-  border: 1px solid #e0e7ff;
-  box-shadow: 0 8px 20px rgba(63, 99, 233, 0.08);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -145,12 +240,13 @@ main {
   transform: translateY(-2px);
 }
 .box-header {
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e0e7ff;
+  border-bottom: 1px solid var(--border-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .sidebar .box-header {
   padding: 1rem 1.25rem;
@@ -159,7 +255,7 @@ main {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #1b254b;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -341,32 +437,36 @@ main {
 label {
   font-size: 0.95rem;
   font-weight: 500;
-  color: #4a5d8f;
+  color: var(--text-tertiary);
 }
 input[type=text] {
   width: 100%;
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--border-secondary);
+  background: var(--input-bg);
+  color: var(--text-primary);
   font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
 }
 input[type=number] {
   width: 70px;
   padding: 0.55rem 0.7rem;
   border-radius: 8px;
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--border-secondary);
+  background: var(--input-bg);
+  color: var(--text-primary);
   font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
 }
 input[type=text]:focus,
 input[type=number]:focus {
-  border-color: #3f63e9;
+  border-color: var(--accent-hover);
   box-shadow: 0 0 0 3px rgba(63, 99, 233, 0.2);
   outline: none;
 }
 input[type=checkbox] {
-  accent-color: #3f63e9;
+  accent-color: var(--accent-hover);
   width: 1rem;
   height: 1rem;
 }
@@ -384,24 +484,26 @@ input[type=checkbox] {
   display: none;
 }
 .loading-popup {
-  background: #ffffff;
+  background: var(--bg-secondary);
   border-radius: 18px;
   padding: 1.8rem 2.1rem;
   max-width: 420px;
   width: 100%;
-  box-shadow: 0 24px 60px rgba(27, 37, 75, 0.25);
+  box-shadow: var(--shadow-lg);
   text-align: left;
-  color: #1b254b;
+  color: var(--text-primary);
+  transition: background 0.3s ease;
 }
 .loading-popup h2 {
   margin: 0 0 0.85rem;
   font-size: 1.25rem;
+  color: var(--text-primary);
 }
 .loading-popup p {
   margin: 0 0 0.85rem;
   line-height: 1.5;
   font-size: 0.95rem;
-  color: #2d3f7b;
+  color: var(--text-secondary);
 }
 .progress-track {
   width: 100%;
@@ -467,16 +569,17 @@ input[type=checkbox] {
   font-weight: 600;
 }
 .result-card {
-  background: #f9fbff;
+  background: var(--card-bg);
   border-radius: 22px;
-  border: 1px solid #dce4ff;
-  box-shadow: 0 20px 45px rgba(64, 87, 217, 0.15);
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .card-summary {
   width: 100%;
   border: none;
-  background: linear-gradient(120deg, #eef3ff, #f9fbff);
+  background: linear-gradient(120deg, var(--bg-tertiary), var(--card-bg));
   padding: 1.35rem 3.6rem 1.35rem 1.8rem;
   text-align: left;
   cursor: pointer;
@@ -486,6 +589,7 @@ input[type=checkbox] {
   row-gap: 0.4rem;
   align-items: center;
   position: relative;
+  transition: background 0.3s ease;
 }
 .card-summary::after {
   content: "";
@@ -564,14 +668,15 @@ input[type=checkbox] {
   display: inline-block;
 }
 .card-details {
-  border-top: 1px solid #e1e6ff;
+  border-top: 1px solid var(--border-primary);
   padding: 1.35rem 1.7rem 1.6rem;
   margin-left: 3.2rem;
   border-left: 4px solid rgba(108, 140, 255, 0.28);
   border-bottom-left-radius: 18px;
   display: none;
   gap: 1.1rem;
-  background: #ffffff;
+  background: var(--bg-secondary);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .ai-reason {
   margin-left: 1.6rem;
@@ -685,28 +790,30 @@ input[type=checkbox] {
 }
 .modal-container {
   position: relative;
-  background: #ffffff;
+  background: var(--bg-secondary);
   border-radius: 20px;
   max-width: 850px;
   width: 100%;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 28px 70px rgba(27, 37, 75, 0.35);
+  box-shadow: var(--shadow-lg);
+  transition: background 0.3s ease;
 }
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e0e7ff;
-  background: linear-gradient(135deg, #f9fbff, #ffffff);
+  border-bottom: 1px solid var(--border-primary);
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .modal-header h2 {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 700;
-  color: #1b254b;
+  color: var(--text-primary);
 }
 .modal-close {
   width: 36px;
@@ -1208,7 +1315,7 @@ input[type=checkbox] {
     return;
   }
 
-  // 로그인되어 있으면 사용자 이름 표시
+  // 로그인되어 있으면 사용자 이름 표시 및 다크모드 설정
   window.addEventListener('DOMContentLoaded', function() {
     const username = sessionStorage.getItem('username') || localStorage.getItem('username') || 'User';
     const userBadge = document.getElementById('user-badge');
@@ -1229,8 +1336,41 @@ input[type=checkbox] {
         window.location.href = 'index.html';
       });
     }
+
+    // 다크모드 초기화
+    initDarkMode();
   });
 })();
+
+// 다크모드 토글 기능
+function initDarkMode() {
+  const darkModeToggle = document.getElementById('dark-mode-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+  const body = document.body;
+
+  // 저장된 테마 설정 불러오기
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    body.classList.add('dark-mode');
+    if (themeIcon) themeIcon.textContent = '☀️';
+  }
+
+  // 다크모드 토글 버튼 이벤트
+  if (darkModeToggle) {
+    darkModeToggle.addEventListener('click', function() {
+      body.classList.toggle('dark-mode');
+
+      // 아이콘 변경
+      if (body.classList.contains('dark-mode')) {
+        if (themeIcon) themeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+      } else {
+        if (themeIcon) themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+      }
+    });
+  }
+}
 </script>
 <div class="app-container">
   <!-- 사이드바 -->
@@ -1240,10 +1380,15 @@ input[type=checkbox] {
         <h1>MEDGEN</h1>
         <p class="subtitle">MedDRA 28.1 한국어</p>
       </div>
-      <button type="button" id="logout-button" class="logout-button" title="로그아웃">
-        <span class="user-badge" id="user-badge"></span>
-        <span>로그아웃</span>
-      </button>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <button type="button" id="dark-mode-toggle" class="dark-mode-toggle" title="다크모드 전환">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <button type="button" id="logout-button" class="logout-button" title="로그아웃">
+          <span class="user-badge" id="user-badge"></span>
+          <span>로그아웃</span>
+        </button>
+      </div>
     </div>
     <div class="sidebar-content">
       <!-- 검색 문서 그룹박스 -->
