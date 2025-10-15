@@ -7,70 +7,141 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  padding: 2.5rem;
+  padding: 0;
   font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
   background: #f5f7fb;
   color: #1b254b;
+  min-height: 100vh;
 }
-main {
-  max-width: 920px;
-  margin: 0 auto;
+.app-container {
+  display: flex;
+  min-height: 100vh;
 }
-h1 {
-  font-size: 1.95rem;
-  margin: 0;
+.sidebar {
+  width: 380px;
+  background: linear-gradient(180deg, #ffffff, #f9fbff);
+  border-right: 1px solid #e0e7ff;
+  box-shadow: 4px 0 20px rgba(63, 99, 233, 0.08);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(160, 174, 212, 0.08);
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(70, 98, 255, 0.3);
+  border-radius: 4px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(70, 98, 255, 0.5);
+}
+.sidebar-header {
+  padding: 2rem 1.5rem 1.5rem;
+  border-bottom: 1px solid #e0e7ff;
+  background: linear-gradient(135deg, #f9fbff, #ffffff);
+}
+.sidebar-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.3rem;
   font-weight: 700;
   letter-spacing: 0.03em;
+  color: #1b254b;
 }
-.subtitle {
-  margin: 0.15rem 0 1.4rem;
-  font-size: 0.98rem;
+.sidebar-header .subtitle {
+  margin: 0;
+  font-size: 0.85rem;
   color: rgba(27, 37, 75, 0.5);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.main-grid {
-  display: grid;
-  grid-template-columns: 380px 1fr;
+.sidebar-content {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
-  margin-bottom: 1.75rem;
-  align-items: start;
+  overflow-y: auto;
+}
+main {
+  flex: 1;
+  padding: 2.5rem;
+  max-width: 1200px;
+  width: 100%;
+}
+.main-content-header {
+  margin-bottom: 2rem;
+}
+.main-content-header h2 {
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  color: #1b254b;
+}
+.main-content-header p {
+  margin: 0;
+  font-size: 1rem;
+  color: #7a8ac7;
+  font-weight: 500;
 }
 .group-box {
   background: #ffffff;
-  border-radius: 18px;
+  border-radius: 16px;
   border: 1px solid #e0e7ff;
-  box-shadow: 0 10px 30px rgba(63, 99, 233, 0.08);
+  box-shadow: 0 8px 20px rgba(63, 99, 233, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: all 0.3s ease;
+}
+.sidebar .group-box {
+  box-shadow: 0 4px 12px rgba(63, 99, 233, 0.06);
+}
+.sidebar .group-box:hover {
+  box-shadow: 0 6px 16px rgba(63, 99, 233, 0.1);
+  transform: translateY(-2px);
 }
 .box-header {
   background: linear-gradient(135deg, #f9fbff, #ffffff);
-  padding: 1.2rem 1.5rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid #e0e7ff;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+.sidebar .box-header {
+  padding: 1rem 1.25rem;
+}
 .box-title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #1b254b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .box-content {
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+.sidebar .box-content {
+  padding: 1.25rem;
 }
 .document-content {
   justify-content: space-between;
 }
 .document-box {
-  height: 100%;
+  flex: 1;
 }
 .document-box .box-content {
   flex: 1;
@@ -186,10 +257,12 @@ h1 {
   box-shadow: 0 6px 16px rgba(63, 99, 233, 0.18);
 }
 .search-layout {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1.5rem;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.sidebar .search-layout {
+  gap: 1rem;
 }
 .search-inputs {
   display: flex;
@@ -219,12 +292,15 @@ h1 {
 }
 .search-buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.75rem;
-  min-width: 140px;
+  width: 100%;
+}
+.sidebar .search-buttons {
+  flex-direction: column;
 }
 .btn-block {
-  width: 100%;
+  flex: 1;
 }
 label {
   font-size: 0.95rem;
@@ -970,6 +1046,29 @@ input[type=checkbox] {
   font-weight: 700;
   color: #1c7c54;
 }
+@media (max-width: 1200px) {
+  .app-container {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid #e0e7ff;
+    box-shadow: 0 4px 20px rgba(63, 99, 233, 0.08);
+  }
+  .sidebar-content {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .sidebar .group-box {
+    min-width: 350px;
+  }
+  main {
+    padding: 2rem;
+  }
+}
 @media (max-width: 968px) {
   #results.split-mode {
     grid-template-columns: 1fr;
@@ -981,12 +1080,6 @@ input[type=checkbox] {
   }
   .term-list {
     max-height: 300px;
-  }
-}
-@media (max-width: 968px) {
-  .main-grid {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
   }
   .search-layout {
     grid-template-columns: 1fr;
@@ -1000,13 +1093,26 @@ input[type=checkbox] {
   }
 }
 @media (max-width: 640px) {
-  body { padding: 1.5rem; }
+  main { padding: 1.5rem; }
+  .sidebar-header {
+    padding: 1.5rem 1.25rem;
+  }
+  .sidebar-header h1 {
+    font-size: 1.3rem;
+  }
+  .sidebar-content {
+    padding: 1rem;
+    flex-direction: column;
+  }
+  .sidebar .group-box {
+    min-width: unset;
+  }
   .box-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-  .box-content { padding: 1.2rem; }
+  .box-content { padding: 1rem; }
   .options-row {
     flex-direction: column;
     align-items: flex-start;
@@ -1021,67 +1127,78 @@ input[type=checkbox] {
 </style>
 </head>
 <body>
-<main>
-  <h1>MEDGEN | 한국어 증상코드조회</h1>
-  <p class="subtitle">MedDRA 28.1 | 로컬 데이터</p>
-
-  <!-- 메인 그리드 레이아웃 -->
-  <div class="main-grid">
-    <!-- 검색 문서 그룹박스 -->
-    <section class="group-box document-box">
-      <div class="box-header">
-        <h2 class="box-title">📄 검색 문서</h2>
-      </div>
-      <div class="box-content document-content">
-        <div class="upload-zone" id="upload-zone">
-          <button type="button" class="upload-button" id="upload-button">
-            <span>📄</span>
-            <span>파일 선택</span>
-          </button>
-          <p class="upload-hint">PDF 파일을 드래그하거나 클릭하여 업로드하세요</p>
-          <input type="file" id="file-upload" accept=".pdf" style="display: none;" />
+<div class="app-container">
+  <!-- 사이드바 -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>MEDGEN</h1>
+      <p class="subtitle">MedDRA 28.1 한국어</p>
+    </div>
+    <div class="sidebar-content">
+      <!-- 검색 문서 그룹박스 -->
+      <section class="group-box document-box">
+        <div class="box-header">
+          <h2 class="box-title"><span>📄</span>검색 문서</h2>
         </div>
-        <div class="selected-document" id="selected-document" hidden>
-          <span class="document-icon">📄</span>
-          <span class="document-name" id="document-name"></span>
-          <span class="document-status" id="document-status"></span>
+        <div class="box-content document-content">
+          <div class="upload-zone" id="upload-zone">
+            <button type="button" class="upload-button" id="upload-button">
+              <span>📄</span>
+              <span>파일 선택</span>
+            </button>
+            <p class="upload-hint">PDF 파일을 드래그하거나 클릭하여 업로드하세요</p>
+            <input type="file" id="file-upload" accept=".pdf" style="display: none;" />
+          </div>
+          <div class="selected-document" id="selected-document" hidden>
+            <span class="document-icon">📄</span>
+            <span class="document-name" id="document-name"></span>
+            <span class="document-status" id="document-status"></span>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- 검색 그룹박스 -->
-    <section class="group-box search-box">
-      <div class="box-header">
-        <h2 class="box-title">🔍 증상 및 용어 검색</h2>
-      </div>
-      <form id="search-form" class="box-content">
-        <div class="search-layout">
-          <div class="search-inputs">
-            <div class="input-row">
-              <label for="q">증상 또는 용어</label>
-              <input type="text" id="q" name="q" placeholder="예: 빈혈" required />
-            </div>
-            <div class="input-row options-row">
-              <div class="option-group">
-                <label for="limit">결과 수</label>
-                <input type="number" id="limit" name="limit" value="10" min="1" />
+      <!-- 증상 및 용어 검색 그룹박스 -->
+      <section class="group-box search-box">
+        <div class="box-header">
+          <h2 class="box-title"><span>🔍</span>증상 및 용어 검색</h2>
+        </div>
+        <form id="search-form" class="box-content">
+          <div class="search-layout">
+            <div class="search-inputs">
+              <div class="input-row">
+                <label for="q">증상 또는 용어</label>
+                <input type="text" id="q" name="q" placeholder="예: 빈혈" required />
               </div>
-              <label class="checkbox-label">
-                <input type="checkbox" id="inactive" />
-                <span>비활성 용어 포함</span>
-              </label>
+              <div class="input-row options-row">
+                <div class="option-group">
+                  <label for="limit">결과 수</label>
+                  <input type="number" id="limit" name="limit" value="10" min="1" />
+                </div>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="inactive" />
+                  <span>비활성 용어 포함</span>
+                </label>
+              </div>
+            </div>
+            <div class="search-buttons">
+              <button type="submit" class="btn btn-primary btn-block">🔍 검색</button>
+              <button type="button" class="btn btn-ai btn-block" id="ai-search">✨ AI 검색</button>
             </div>
           </div>
-          <div class="search-buttons">
-            <button type="submit" class="btn btn-primary btn-block">🔍 검색</button>
-            <button type="button" class="btn btn-ai btn-block" id="ai-search">✨ AI 검색</button>
-          </div>
-        </div>
-      </form>
-    </section>
-  </div>
-  <section id="results"></section>
-</main>
+        </form>
+      </section>
+    </div>
+  </aside>
+
+  <!-- 메인 컨텐츠 -->
+  <main>
+    <div class="main-content-header">
+      <h2>증상 코드 조회 결과</h2>
+      <p>검색어를 입력하고 MedDRA 코드를 조회하세요</p>
+    </div>
+    <section id="results"></section>
+  </main>
+</div>
 <div id="loading-overlay" class="loading-overlay" hidden>
   <div class="loading-popup">
     <h2>데이터 로딩 중...</h2>
