@@ -37,7 +37,19 @@ async function dbAutoFill(providedCiomsData = null) {
     viewport: { width: 1600, height: 1000 }
   });
 
+  // MedDRA-DB 사이트용 페이지 (오른쪽)
   const page = await context.newPage();
+
+  // 로컬 앱용 페이지 (왼쪽) - 나란히 배치를 위해
+  const localPage = await context.newPage();
+
+  // 브라우저 창 위치 조정 (나란히 배치)
+  const screenWidth = 1920; // 일반적인 모니터 너비
+  const halfWidth = Math.floor(screenWidth / 2);
+
+  // 로컬 앱을 왼쪽에 배치
+  await localPage.setViewportSize({ width: halfWidth, height: 1000 });
+  await localPage.goto('http://127.0.0.1:8000/main.html');
 
   try {
     // Step 1: MedDRA-DB 사이트 접속
@@ -105,8 +117,11 @@ async function dbAutoFill(providedCiomsData = null) {
         patient_country: 'KR',
         patient_age: '45',
         patient_sex: 'M',
-        reaction_en_1: 'Anemia',
-        reaction_ko_1: '빈혈',
+        reactions: [
+          { en: 'Anemia', ko: '빈혈' },
+          { en: 'Headache', ko: '두통' },
+          { en: 'Nausea', ko: '오심' }
+        ],
         drug_name_en_1: 'Aspirin',
         drug_name_ko_1: '아스피린',
         indication_en_1: 'Pain relief',
@@ -120,8 +135,10 @@ async function dbAutoFill(providedCiomsData = null) {
       };
     }
 
-    // 각 필드에 데이터 입력
-    for (const [fieldName, value] of Object.entries(formData)) {
+    // 기본 필드 입력 (반응 제외)
+    const { reactions, ...basicFields } = formData;
+
+    for (const [fieldName, value] of Object.entries(basicFields)) {
       try {
         const input = await page.locator(`[name="${fieldName}"], #${fieldName}`).first();
 
@@ -176,6 +193,46 @@ async function dbAutoFill(providedCiomsData = null) {
       }
     }
 
+    // Step 4.5: 여러 반응 입력 처리
+    if (formData.reactions && formData.reactions.length > 0) {
+      console.log('\n📋 반응 정보 입력 중...\n');
+
+      for (let i = 0; i < formData.reactions.length; i++) {
+        const reaction = formData.reactions[i];
+        const index = i + 1;
+
+        console.log(`  반응 ${index}:`);
+
+        // 첫 번째 반응이 아니면 "부작용 추가" 버튼 클릭
+        if (i > 0) {
+          console.log(`    → 부작용 추가 버튼 클릭`);
+          const addButton = await page.locator('button:has-text("+ 부작용 추가")').first();
+          if (await addButton.isVisible()) {
+            await addButton.click();
+            await page.waitForTimeout(500);
+          }
+        }
+
+        // 영어 반응명 입력
+        const reactionEnField = await page.locator(`[name="reaction_en_${index}"]`).first();
+        if (await reactionEnField.isVisible()) {
+          await reactionEnField.fill(reaction.en || '');
+          console.log(`    ✓ 영어: ${reaction.en || 'N/A'}`);
+        }
+
+        // 한글 반응명 입력
+        const reactionKoField = await page.locator(`[name="reaction_ko_${index}"]`).first();
+        if (await reactionKoField.isVisible()) {
+          await reactionKoField.fill(reaction.ko || '');
+          console.log(`    ✓ 한글: ${reaction.ko || 'N/A'}`);
+        }
+
+        await page.waitForTimeout(300);
+      }
+
+      console.log(`\n  ✅ 총 ${formData.reactions.length}개 반응 입력 완료\n`);
+    }
+
     // Step 5: 저장 버튼 클릭
     console.log('\n💾 저장 중...');
     const saveButton = await page.locator('button:has-text("저장")').last(); // "임시 저장"이 아닌 "저장" 버튼
@@ -225,13 +282,12 @@ function mapCiomsDataToFormFields(ciomsData) {
   formData.patient_age = patientInfo.나이 || '';
   formData.patient_sex = patientInfo.성별 || ''; // M, F, U
 
-  // 유해 반응 정보 (첫 번째 반응만 사용)
+  // 유해 반응 정보 (모든 반응 처리)
   const reactions = ciomsData.반응_정보?.Adverse_Reactions || [];
-  if (reactions.length > 0) {
-    const firstReaction = reactions[0];
-    formData.reaction_en_1 = firstReaction.영어 || firstReaction.korean || '';
-    formData.reaction_ko_1 = firstReaction.korean || firstReaction.영어 || '';
-  }
+  formData.reactions = reactions.map(reaction => ({
+    en: reaction.영어 || reaction.korean || '',
+    ko: reaction.korean || reaction.영어 || ''
+  }));
 
   // 의약품 정보 (첫 번째 약물만 사용)
   const drugs = ciomsData.의약품_정보?.약물_목록 || [];
