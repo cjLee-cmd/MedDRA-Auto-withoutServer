@@ -101,33 +101,23 @@ class MeddraRequestHandler(BaseHTTPRequestHandler):
             # Convert CIOMS data to JSON string
             cioms_json = json.dumps(cioms_data, ensure_ascii=False)
 
-            # Run the Node.js script
-            print(f"[DB-AutoFill] Starting Playwright automation...")
-            result = subprocess.run(
+            # Run the Node.js script in background
+            print(f"[DB-AutoFill] Starting Playwright automation in background...")
+            subprocess.Popen(
                 ["node", str(script_path), cioms_json],
-                capture_output=True,
-                text=True,
-                timeout=600  # 10 minutes timeout
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
             )
 
-            if result.returncode == 0:
-                self._send_json({
-                    "success": True,
-                    "message": "DB auto-fill completed successfully",
-                    "output": result.stdout
-                })
-            else:
-                self._send_json({
-                    "success": False,
-                    "error": "DB auto-fill failed",
-                    "output": result.stdout,
-                    "stderr": result.stderr
-                }, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+            # Immediately return success response
+            self._send_json({
+                "success": True,
+                "message": "DB auto-fill started successfully"
+            })
 
         except json.JSONDecodeError as exc:
             self._send_json({"error": f"Invalid JSON: {exc}"}, status=HTTPStatus.BAD_REQUEST)
-        except subprocess.TimeoutExpired:
-            self._send_json({"error": "DB auto-fill timeout (10 minutes)"}, status=HTTPStatus.REQUEST_TIMEOUT)
         except Exception as exc:  # pylint: disable=broad-except
             self._send_json({"error": f"Server error: {exc}"}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
 

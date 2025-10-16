@@ -34,32 +34,17 @@ async function dbAutoFill(providedCiomsData = null) {
   });
 
   const context = await browser.newContext({
-    viewport: { width: 1600, height: 1000 }
+    viewport: { width: 960, height: 1000 }
   });
 
-  // MedDRA-DB 사이트용 페이지 (오른쪽)
+  // MedDRA-DB 사이트용 페이지 먼저 생성
   const page = await context.newPage();
-
-  // 로컬 앱용 페이지 (왼쪽) - 나란히 배치를 위해
-  const localPage = await context.newPage();
-
-  // 브라우저 창 위치 조정 (나란히 배치)
-  const screenWidth = 1920; // 일반적인 모니터 너비
-  const halfWidth = Math.floor(screenWidth / 2);
-
-  // 로컬 앱을 왼쪽에 배치
-  await localPage.setViewportSize({ width: halfWidth, height: 1000 });
 
   // 새 탭이 열리는 것을 방지하기 위해 popup 이벤트 차단
   context.on('page', async (newPage) => {
-    // 로컬 앱 페이지가 아닌 새 페이지는 닫기
-    if (newPage !== page && newPage !== localPage) {
-      console.log('  → 불필요한 새 탭 차단');
-      await newPage.close();
-    }
+    console.log('  → 불필요한 새 탭 차단');
+    await newPage.close();
   });
-
-  await localPage.goto('http://127.0.0.1:8000/main.html');
 
   try {
     // Step 1: MedDRA-DB 사이트 접속
@@ -268,19 +253,17 @@ async function dbAutoFill(providedCiomsData = null) {
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('✅ DB 자동 입력 완료!');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('\n⏰ 5분 후 자동으로 종료됩니다');
-    console.log('   (수동으로 닫아도 됩니다)\n');
-
-    // 5분 대기 (결과 확인을 위해)
-    await page.waitForTimeout(300000);
+    console.log('\n💡 브라우저가 열린 상태로 유지됩니다.');
+    console.log('   수동으로 닫거나 추가 작업을 계속하실 수 있습니다.\n');
 
   } catch (error) {
     console.error('❌ 오류 발생:', error.message);
     console.log('\n스택 트레이스:');
     console.log(error.stack);
-  } finally {
+
+    // 오류 발생 시에만 브라우저 닫기
     await browser.close();
-    console.log('\n👋 브라우저를 닫았습니다.');
+    console.log('\n👋 오류로 인해 브라우저를 닫았습니다.');
   }
 }
 
