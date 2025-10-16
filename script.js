@@ -607,14 +607,25 @@ fileUpload.addEventListener('change', async (event) => {
       await sleep(300);
       hideLoadingOverlay();
 
-      // CIOMS 보고서 모달 표시
-      showReportModal(ciomsData);
-
-      // 검색창에 포커스 (사용자가 바로 수정하거나 검색할 수 있도록)
-      queryInput.focus();
-
-      // 파일 입력 초기화는 여기서 하지 않음 - 모달 닫을 때 또는 자동 검색 시작 시 처리
+      // 파일 입력 초기화
+      if (fileUpload) {
+        fileUpload.value = '';
+      }
       isProcessingFile = false;
+
+      // 유해 반응이 있으면 바로 자동 검색 시작
+      const hasReactions = ciomsData.반응_정보?.Adverse_Reactions?.length > 0;
+      if (hasReactions) {
+        // CIOMS 데이터 저장
+        autoSearchState.ciomsData = ciomsData;
+        // 자동 검색 시작
+        await startAutoSearch();
+      } else {
+        // 유해 반응이 없으면 기존처럼 모달 표시
+        showReportModal(ciomsData);
+        queryInput.focus();
+      }
+
       return;
     }
 
