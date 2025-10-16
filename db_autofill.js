@@ -49,12 +49,32 @@ async function dbAutoFill(providedCiomsData = null) {
 
   // 로컬 앱을 왼쪽에 배치
   await localPage.setViewportSize({ width: halfWidth, height: 1000 });
+
+  // 새 탭이 열리는 것을 방지하기 위해 popup 이벤트 차단
+  context.on('page', async (newPage) => {
+    // 로컬 앱 페이지가 아닌 새 페이지는 닫기
+    if (newPage !== page && newPage !== localPage) {
+      console.log('  → 불필요한 새 탭 차단');
+      await newPage.close();
+    }
+  });
+
   await localPage.goto('http://127.0.0.1:8000/main.html');
 
   try {
     // Step 1: MedDRA-DB 사이트 접속
     console.log('📄 MedDRA-DB 사이트 접속...');
     await page.goto('https://cjlee-cmd.github.io/MedDRA-DB/');
+
+    // 데이터베이스 로딩 팝업이 사라질 때까지 대기
+    console.log('  → 데이터베이스 로딩 대기 중...');
+    try {
+      // "데이터베이스를 열고 있습니다" 오버레이가 사라질 때까지 대기 (최대 30초)
+      await page.waitForSelector('.loading-overlay', { state: 'hidden', timeout: 30000 });
+      console.log('  ✓ 데이터베이스 로딩 완료');
+    } catch (timeoutError) {
+      console.log('  ⚠️ 로딩 오버레이 타임아웃 (계속 진행)');
+    }
     await page.waitForTimeout(2000);
 
     // Step 2: 로그인
