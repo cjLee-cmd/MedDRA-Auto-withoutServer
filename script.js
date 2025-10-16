@@ -1476,21 +1476,48 @@ if (dbAutofillButton) {
 
 // DB 자동 입력 수행 함수
 async function performDBAutoFill(ciomsData) {
-  alert('DB 자동 입력 기능은 Playwright MCP 서버와 통합하여 구현됩니다.\n\n' +
-        '현재는 프론트엔드 준비가 완료되었으며, 백엔드 통합이 필요합니다.\n\n' +
-        '자동 입력할 데이터:\n' +
+  try {
+    // 로딩 표시
+    showLoadingOverlay();
+    updateLoadingOverlay('DB 자동 입력 중...', 0);
+
+    // 백엔드 API 호출
+    const response = await fetch('/db-autofill', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      body: JSON.stringify(ciomsData)
+    });
+
+    updateLoadingOverlay('처리 중...', 50);
+
+    const result = await response.json();
+
+    hideLoadingOverlay();
+
+    if (response.ok && result.success) {
+      alert(
+        '✅ DB 자동 입력 완료!\n\n' +
+        'MedDRA-DB 사이트에 CIOMS 데이터가 성공적으로 입력되었습니다.\n\n' +
+        '자동 입력된 데이터:\n' +
         `- 환자 정보: ${ciomsData.환자_정보?.환자_이니셜 || 'N/A'}\n` +
         `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}\n` +
         `- 약물 수: ${ciomsData.의약품_정보?.약물_목록?.length || 0}`
-  );
-
-  // TODO: Playwright MCP 통합
-  // 아래는 구현될 로직의 개요입니다:
-  // 1. Playwright로 https://cjlee-cmd.github.io/MedDRA-DB/ 접속
-  // 2. 로그인 (acuzen/acuzen)
-  // 3. form-edit.html로 이동
-  // 4. 폼 필드에 CIOMS 데이터 매핑하여 입력
-  // 5. 저장 버튼 클릭
+      );
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+  } catch (error) {
+    hideLoadingOverlay();
+    console.error('DB 자동 입력 오류:', error);
+    alert(
+      '❌ DB 자동 입력 실패\n\n' +
+      `오류: ${error.message}\n\n` +
+      'Playwright가 설치되어 있고 서버가 실행 중인지 확인해주세요.'
+    );
+    throw error;
+  }
 }
 
 // === DB 자동 입력 기능 끝 ===

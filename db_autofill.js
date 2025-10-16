@@ -4,10 +4,28 @@ const { chromium } = require('playwright');
  * MedDRA-DB 사이트에 CIOMS 데이터를 자동으로 입력하는 스크립트
  *
  * 사용법:
- * node db_autofill.js
+ * node db_autofill.js [cioms_data_json]
+ *
+ * 예시:
+ * node db_autofill.js '{"환자_정보":{"환자_이니셜":"J.S."},...}'
  */
 
-async function dbAutoFill() {
+// 명령줄 인자에서 CIOMS 데이터 가져오기
+const ciomsDataArg = process.argv[2];
+let ciomsData = null;
+
+if (ciomsDataArg) {
+  try {
+    ciomsData = JSON.parse(ciomsDataArg);
+    console.log('✓ CIOMS 데이터를 인자로부터 받았습니다\n');
+  } catch (e) {
+    console.error('❌ CIOMS 데이터 JSON 파싱 실패:', e.message);
+    process.exit(1);
+  }
+}
+
+async function dbAutoFill(providedCiomsData = null) {
+  const finalCiomsData = providedCiomsData || ciomsData;
   console.log('🚀 MedDRA-DB 자동 입력 시작...\n');
 
   const browser = await chromium.launch({
@@ -68,30 +86,42 @@ async function dbAutoFill() {
     // Step 4: 폼 필드에 데이터 입력
     console.log('\n📋 폼 필드 입력 중...\n');
 
-    // 샘플 CIOMS 데이터 (실제로는 script.js의 autoSearchState.ciomsData에서 가져옴)
-    const sampleData = {
-      manufacturer_control_no: 'ACUZEN-2024-001',
-      date_received: '2024-01-15',
-      patient_initials: 'J.S.',
-      patient_country: 'KR',
-      patient_age: '45',
-      patient_sex: 'M',
-      reaction_en_1: 'Anemia',
-      reaction_ko_1: '빈혈',
-      drug_name_en_1: 'Aspirin',
-      drug_name_ko_1: '아스피린',
-      indication_en_1: 'Pain relief',
-      indication_ko_1: '통증 완화',
-      is_suspected_1: 'S',
-      causality_method: 'WHO-UMC',
-      causality_category: 'Probable',
-      causality_reason: 'Temporal relationship established. No other obvious cause.',
-      causality_assessed_by: 'Dr. Kim',
-      causality_assessed_date: '2024-01-20'
-    };
+    // CIOMS 데이터가 있으면 사용, 없으면 샘플 데이터 사용
+    let formData;
+
+    if (finalCiomsData) {
+      console.log('  ✓ 실제 CIOMS 데이터 사용\n');
+
+      // CIOMS 데이터를 폼 필드 형식으로 변환
+      formData = mapCiomsDataToFormFields(finalCiomsData);
+    } else {
+      console.log('  ⚠️ CIOMS 데이터 없음 - 샘플 데이터 사용\n');
+
+      // 샘플 CIOMS 데이터
+      formData = {
+        manufacturer_control_no: 'ACUZEN-2024-001',
+        date_received: '2024-01-15',
+        patient_initials: 'J.S.',
+        patient_country: 'KR',
+        patient_age: '45',
+        patient_sex: 'M',
+        reaction_en_1: 'Anemia',
+        reaction_ko_1: '빈혈',
+        drug_name_en_1: 'Aspirin',
+        drug_name_ko_1: '아스피린',
+        indication_en_1: 'Pain relief',
+        indication_ko_1: '통증 완화',
+        is_suspected_1: 'S',
+        causality_method: 'WHO-UMC',
+        causality_category: 'Probable',
+        causality_reason: 'Temporal relationship established. No other obvious cause.',
+        causality_assessed_by: 'Dr. Kim',
+        causality_assessed_date: '2024-01-20'
+      };
+    }
 
     // 각 필드에 데이터 입력
-    for (const [fieldName, value] of Object.entries(sampleData)) {
+    for (const [fieldName, value] of Object.entries(formData)) {
       try {
         const input = await page.locator(`[name="${fieldName}"], #${fieldName}`).first();
 
@@ -175,6 +205,66 @@ async function dbAutoFill() {
     await browser.close();
     console.log('\n👋 브라우저를 닫았습니다.');
   }
+}
+
+/**
+ * CIOMS 데이터를 MedDRA-DB 폼 필드 형식으로 변환
+ */
+function mapCiomsDataToFormFields(ciomsData) {
+  const formData = {};
+
+  // 기본 정보
+  const basicInfo = ciomsData.기본_정보 || {};
+  formData.manufacturer_control_no = basicInfo.제조업체_관리번호 || '';
+  formData.date_received = basicInfo.접수일 || formatDate(new Date());
+
+  // 환자 정보
+  const patientInfo = ciomsData.환자_정보 || {};
+  formData.patient_initials = patientInfo.환자_이니셜 || '';
+  formData.patient_country = patientInfo.국가 || 'KR';
+  formData.patient_age = patientInfo.나이 || '';
+  formData.patient_sex = patientInfo.성별 || ''; // M, F, U
+
+  // 유해 반응 정보 (첫 번째 반응만 사용)
+  const reactions = ciomsData.반응_정보?.Adverse_Reactions || [];
+  if (reactions.length > 0) {
+    const firstReaction = reactions[0];
+    formData.reaction_en_1 = firstReaction.영어 || firstReaction.korean || '';
+    formData.reaction_ko_1 = firstReaction.korean || firstReaction.영어 || '';
+  }
+
+  // 의약품 정보 (첫 번째 약물만 사용)
+  const drugs = ciomsData.의약품_정보?.약물_목록 || [];
+  if (drugs.length > 0) {
+    const firstDrug = drugs[0];
+    formData.drug_name_en_1 = firstDrug.약물명_영어 || firstDrug.약물명 || '';
+    formData.drug_name_ko_1 = firstDrug.약물명 || firstDrug.약물명_영어 || '';
+    formData.indication_en_1 = firstDrug.적응증_영어 || firstDrug.적응증 || '';
+    formData.indication_ko_1 = firstDrug.적응증 || firstDrug.적응증_영어 || '';
+
+    // 의심 약물 여부 (S: Suspected, C: Concomitant)
+    formData.is_suspected_1 = firstDrug.의심약물 === true ? 'S' : 'C';
+  }
+
+  // 인과성 평가 정보
+  const causality = ciomsData.인과성_평가 || {};
+  formData.causality_method = causality.평가방법 || 'WHO-UMC';
+  formData.causality_category = causality.평가결과 || '';
+  formData.causality_reason = causality.평가근거 || '';
+  formData.causality_assessed_by = causality.평가자 || '';
+  formData.causality_assessed_date = causality.평가일 || formatDate(new Date());
+
+  return formData;
+}
+
+/**
+ * 날짜를 YYYY-MM-DD 형식으로 포맷
+ */
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // 스크립트 실행

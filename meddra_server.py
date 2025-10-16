@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
+import tempfile
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -63,9 +65,71 @@ class MeddraRequestHandler(BaseHTTPRequestHandler):
             return
         self._send_json({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
+    def do_POST(self) -> None:  # noqa: N802 (BaseHTTPRequestHandler requirement)
+        parsed = urlparse(self.path)
+        if parsed.path == "/db-autofill":
+            self._handle_db_autofill()
+            return
+        self._send_json({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
+
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
         # Reduce console noise but keep ability to trace if needed.
         return
+
+    def _handle_db_autofill(self) -> None:
+        """Handle POST /db-autofill: Run Playwright script with CIOMS data."""
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length == 0:
+                self._send_json({"error": "Empty request body"}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            body = self.rfile.read(content_length)
+            cioms_data = json.loads(body.decode("utf-8"))
+
+            # Validate CIOMS data
+            if not cioms_data:
+                self._send_json({"error": "Invalid CIOMS data"}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            # Run db_autofill.js with CIOMS data
+            script_path = Path(__file__).resolve().parent / "db_autofill.js"
+            if not script_path.exists():
+                self._send_json({"error": "db_autofill.js not found"}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+                return
+
+            # Convert CIOMS data to JSON string
+            cioms_json = json.dumps(cioms_data, ensure_ascii=False)
+
+            # Run the Node.js script
+            print(f"[DB-AutoFill] Starting Playwright automation...")
+            result = subprocess.run(
+                ["node", str(script_path), cioms_json],
+                capture_output=True,
+                text=True,
+                timeout=600  # 10 minutes timeout
+            )
+
+            if result.returncode == 0:
+                self._send_json({
+                    "success": True,
+                    "message": "DB auto-fill completed successfully",
+                    "output": result.stdout
+                })
+            else:
+                self._send_json({
+                    "success": False,
+                    "error": "DB auto-fill failed",
+                    "output": result.stdout,
+                    "stderr": result.stderr
+                }, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        except json.JSONDecodeError as exc:
+            self._send_json({"error": f"Invalid JSON: {exc}"}, status=HTTPStatus.BAD_REQUEST)
+        except subprocess.TimeoutExpired:
+            self._send_json({"error": "DB auto-fill timeout (10 minutes)"}, status=HTTPStatus.REQUEST_TIMEOUT)
+        except Exception as exc:  # pylint: disable=broad-except
+            self._send_json({"error": f"Server error: {exc}"}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def _handle_search(self, query_string: str) -> None:
         query_params = parse_qs(query_string)
