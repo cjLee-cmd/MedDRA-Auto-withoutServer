@@ -1444,6 +1444,84 @@ function finishAutoSearch() {
 
 // === 자동 검색 기능 끝 ===
 
+// === DB 자동 입력 기능 시작 ===
+
+// DB 자동 입력 버튼 이벤트 리스너
+const dbAutofillButton = document.getElementById('db-autofill-button');
+if (dbAutofillButton) {
+  dbAutofillButton.addEventListener('click', async () => {
+    // CIOMS 데이터가 있는지 확인
+    if (!autoSearchState.ciomsData) {
+      alert('먼저 PDF 파일을 업로드하여 CIOMS 데이터를 추출해주세요.');
+      return;
+    }
+
+    // 확인 메시지
+    const confirmed = confirm(
+      'MedDRA-DB 사이트에 CIOMS 데이터를 자동으로 입력하시겠습니까?\n\n' +
+      '브라우저 창이 열리고 자동으로 폼이 작성됩니다.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      // Playwright MCP를 통해 자동 입력 수행
+      await performDBAutoFill(autoSearchState.ciomsData);
+    } catch (error) {
+      console.error('DB 자동 입력 오류:', error);
+      alert(`DB 자동 입력 중 오류가 발생했습니다:\n${error.message}`);
+    }
+  });
+}
+
+// DB 자동 입력 수행 함수
+async function performDBAutoFill(ciomsData) {
+  try {
+    // 로딩 표시
+    showLoadingOverlay();
+    updateLoadingOverlay('DB 자동 입력 중...', 0);
+
+    // 백엔드 API 호출
+    const response = await fetch('/db-autofill', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      body: JSON.stringify(ciomsData)
+    });
+
+    updateLoadingOverlay('처리 중...', 50);
+
+    const result = await response.json();
+
+    hideLoadingOverlay();
+
+    if (response.ok && result.success) {
+      alert(
+        '✅ DB 자동 입력 완료!\n\n' +
+        'MedDRA-DB 사이트에 CIOMS 데이터가 성공적으로 입력되었습니다.\n\n' +
+        '자동 입력된 데이터:\n' +
+        `- 환자 정보: ${ciomsData.환자_정보?.환자_이니셜 || 'N/A'}\n` +
+        `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}\n` +
+        `- 약물 수: ${ciomsData.의약품_정보?.약물_목록?.length || 0}`
+      );
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+  } catch (error) {
+    hideLoadingOverlay();
+    console.error('DB 자동 입력 오류:', error);
+    alert(
+      '❌ DB 자동 입력 실패\n\n' +
+      `오류: ${error.message}\n\n` +
+      'Playwright가 설치되어 있고 서버가 실행 중인지 확인해주세요.'
+    );
+    throw error;
+  }
+}
+
+// === DB 자동 입력 기능 끝 ===
+
 function escapeHtml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
