@@ -52,12 +52,18 @@ simple_demo.js
 test_layout.js
 test_pdf_scroll.js
 test_scroll.js
+test_autofill.js
+test_db_button.js
+test_with_screenshots.js
+analyze_db_site.js
 
-# But keep test infrastructure
+# But keep test infrastructure and important test scripts
 !playwright.config.js
 !pytest.ini
 !run_tests.sh
 !requirements-dev.txt
+!test_integration.js
+!analyze_form_fields.js
 
 # Design documentation (temporary)
 *_DESIGN.md
