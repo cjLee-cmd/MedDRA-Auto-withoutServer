@@ -59,21 +59,30 @@ async function dbAutoFill(ciomsData) {
   console.log('🚀 MedDRA-DB 자동 입력 시작...\n');
 
   try {
-    // Step 1: 데이터베이스 로딩 대기
-    console.log('📄 MedDRA-DB 사이트 로딩 중...');
-    await waitForElementHidden('.loading-overlay', 30000);
-    console.log('  ✓ 데이터베이스 로딩 완료');
-    await sleep(2000);
+    // Step 0: 현재 페이지 확인
+    const currentUrl = window.location.href;
+    console.log('📍 현재 URL:', currentUrl);
 
-    // Step 2: 로그인
-    console.log('🔐 로그인 중...');
-    await performLogin();
-    await sleep(3000);
+    // 이미 form-edit.html에 있다면 로그인과 페이지 이동 스킵
+    if (currentUrl.includes('form-edit.html')) {
+      console.log('✅ 이미 폼 작성 페이지에 있습니다. 바로 입력 시작합니다.\n');
+    } else {
+      // Step 1: 데이터베이스 로딩 대기
+      console.log('📄 MedDRA-DB 사이트 로딩 중...');
+      await waitForElementHidden('.loading-overlay', 30000);
+      console.log('  ✓ 데이터베이스 로딩 완료');
+      await sleep(2000);
 
-    // Step 3: 새 폼 추가 페이지로 이동
-    console.log('\n📝 새 폼 작성 페이지로 이동...');
-    await navigateToNewForm();
-    await sleep(2000);
+      // Step 2: 로그인
+      console.log('🔐 로그인 중...');
+      await performLogin();
+      await sleep(3000);
+
+      // Step 3: 새 폼 추가 페이지로 이동
+      console.log('\n📝 새 폼 작성 페이지로 이동...');
+      await navigateToNewForm();
+      await sleep(2000);
+    }
 
     // Step 4: 폼 필드에 데이터 입력
     console.log('\n📋 폼 필드 입력 중...\n');
