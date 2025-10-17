@@ -111,7 +111,11 @@ async function performLogin() {
     console.log('  ✓ 비밀번호 입력');
   }
 
-  const loginButton = await waitForElement('button[type="submit"], button:has-text("로그인"), input[type="submit"]', 5000);
+  // 로그인 버튼 찾기 (텍스트 기반)
+  const loginButton = Array.from(document.querySelectorAll('button, input[type="submit"]')).find(btn =>
+    btn.type === 'submit' || btn.textContent.includes('로그인')
+  );
+
   if (loginButton && loginButton.offsetParent !== null) {
     loginButton.click();
     console.log('  ✓ 로그인 버튼 클릭');
@@ -122,8 +126,10 @@ async function performLogin() {
  * 새 폼 작성 페이지로 이동
  */
 async function navigateToNewForm() {
-  // 방법 1: 링크 클릭 시도
-  const newFormLink = document.querySelector('a[href="form-edit.html"], a:has-text("새 폼 추가")');
+  // 방법 1: 링크 클릭 시도 (텍스트 기반)
+  const newFormLink = Array.from(document.querySelectorAll('a')).find(link =>
+    link.href.includes('form-edit.html') || link.textContent.includes('새 폼 추가')
+  );
 
   if (newFormLink && newFormLink.offsetParent !== null) {
     newFormLink.click();
@@ -194,7 +200,9 @@ async function fillFormFields(formData) {
 
       // 첫 번째 반응이 아니면 "부작용 추가" 버튼 클릭
       if (i > 0) {
-        const addButton = document.querySelector('button:contains("+ 부작용 추가")');
+        const addButton = Array.from(document.querySelectorAll('button')).find(btn =>
+          btn.textContent.includes('부작용 추가')
+        );
         if (addButton && addButton.offsetParent !== null) {
           console.log(`    → 부작용 추가 버튼 클릭`);
           addButton.click();
