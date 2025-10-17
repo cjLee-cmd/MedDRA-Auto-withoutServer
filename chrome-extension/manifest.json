@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "MedDRA DB AutoFill",
+  "version": "1.0.0",
+  "description": "CIOMS 데이터를 MedDRA-DB 사이트에 자동으로 입력하는 Chrome 확장 프로그램",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://cjlee-cmd.github.io/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://cjlee-cmd.github.io/MedDRA-DB/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "externally_connectable": {
+    "matches": ["https://cjlee-cmd.github.io/*"]
+  },
+  "action": {
+    "default_title": "MedDRA DB AutoFill"
+  }
+}

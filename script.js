@@ -1481,40 +1481,72 @@ async function performDBAutoFill(ciomsData) {
     showLoadingOverlay();
     updateLoadingOverlay('DB 자동 입력 중...', 0);
 
-    // 백엔드 API 호출
-    const response = await fetch('/db-autofill', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8'
-      },
-      body: JSON.stringify(ciomsData)
-    });
+    // Chrome 확장 프로그램 ID (설치 후 업데이트 필요)
+    const EXTENSION_ID = 'YOUR_EXTENSION_ID_HERE'; // TODO: 실제 확장 ID로 교체
 
-    updateLoadingOverlay('처리 중...', 50);
-
-    const result = await response.json();
-
-    hideLoadingOverlay();
-
-    if (response.ok && result.success) {
+    // Chrome 확장이 설치되어 있는지 확인
+    if (typeof chrome === 'undefined' || !chrome.runtime) {
+      hideLoadingOverlay();
       alert(
-        '✅ DB 자동 입력 완료!\n\n' +
-        'MedDRA-DB 사이트에 CIOMS 데이터가 성공적으로 입력되었습니다.\n\n' +
-        '자동 입력된 데이터:\n' +
-        `- 환자 정보: ${ciomsData.환자_정보?.환자_이니셜 || 'N/A'}\n` +
-        `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}\n` +
-        `- 약물 수: ${ciomsData.의약품_정보?.약물_목록?.length || 0}`
+        '❌ Chrome 확장 프로그램이 설치되지 않았습니다.\n\n' +
+        '1. chrome-extension 폴더를 Chrome에 로드하세요\n' +
+        '2. chrome://extensions/로 이동\n' +
+        '3. "개발자 모드" 활성화\n' +
+        '4. "압축해제된 확장 로드" 클릭\n' +
+        '5. chrome-extension 폴더 선택'
       );
-    } else {
-      throw new Error(result.error || 'Unknown error');
+      return;
     }
+
+    // Chrome 확장에 메시지 전송
+    chrome.runtime.sendMessage(
+      EXTENSION_ID,
+      {
+        action: 'dbAutofill',
+        ciomsData: ciomsData
+      },
+      (response) => {
+        hideLoadingOverlay();
+
+        if (chrome.runtime.lastError) {
+          console.error('Chrome 확장 통신 오류:', chrome.runtime.lastError);
+          alert(
+            '❌ Chrome 확장과 통신할 수 없습니다.\n\n' +
+            `오류: ${chrome.runtime.lastError.message}\n\n` +
+            '확장이 올바르게 설치되어 있는지 확인해주세요.'
+          );
+          return;
+        }
+
+        if (response && response.success) {
+          alert(
+            '✅ DB 자동 입력 시작!\n\n' +
+            'MedDRA-DB 사이트가 새 탭에서 열렸습니다.\n' +
+            '자동으로 폼이 입력됩니다.\n\n' +
+            '자동 입력 데이터:\n' +
+            `- 환자 정보: ${ciomsData.환자_정보?.환자_이니셜 || 'N/A'}\n` +
+            `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}\n` +
+            `- 약물 수: ${ciomsData.의약품_정보?.약물_목록?.length || 0}`
+          );
+        } else {
+          alert(
+            '❌ DB 자동 입력 실패\n\n' +
+            `오류: ${response?.error || '알 수 없는 오류'}\n\n` +
+            'Chrome 확장이 올바르게 설치되어 있는지 확인해주세요.'
+          );
+        }
+      }
+    );
+
+    updateLoadingOverlay('Chrome 확장에 요청 전송 중...', 50);
+
   } catch (error) {
     hideLoadingOverlay();
     console.error('DB 자동 입력 오류:', error);
     alert(
       '❌ DB 자동 입력 실패\n\n' +
       `오류: ${error.message}\n\n` +
-      'Playwright가 설치되어 있고 서버가 실행 중인지 확인해주세요.'
+      'Chrome 확장이 설치되어 있는지 확인해주세요.'
     );
     throw error;
   }
