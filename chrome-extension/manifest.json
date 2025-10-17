@@ -16,8 +16,13 @@
   },
   "content_scripts": [
     {
+      "matches": ["https://cjlee-cmd.github.io/MedDRA/main.html"],
+      "js": ["bridge.js"],
+      "run_at": "document_idle"
+    },
+    {
       "matches": ["https://cjlee-cmd.github.io/MedDRA-DB/*"],
-      "js": ["content.js"],
+      "js": ["autofill.js"],
       "run_at": "document_idle"
     }
   ],

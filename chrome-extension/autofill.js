@@ -1,7 +1,5 @@
 /**
- * MedDRA DB AutoFill - Content Script
- *
- * db_autofill.js의 Playwright 코드를 Chrome Extension DOM 조작으로 변환
+ * MedDRA DB AutoFill - AutoFill Script (MedDRA-DB용)
  *
  * 역할:
  * 1. chrome.storage에서 CIOMS 데이터 읽기
@@ -11,35 +9,7 @@
  * 5. 저장
  */
 
-console.log('[MedDRA AutoFill] Content script loaded');
-
-// GitHub Pages와의 window.postMessage 통신 리스너
-window.addEventListener('message', (event) => {
-  // 같은 윈도우에서 온 메시지만 처리
-  if (event.source !== window) return;
-
-  // MEDDRA_AUTOFILL_REQUEST 메시지 처리
-  if (event.data.type === 'MEDDRA_AUTOFILL_REQUEST') {
-    console.log('[Content] Received postMessage request:', event.data);
-
-    // Background script로 메시지 전달
-    chrome.runtime.sendMessage({
-      action: event.data.action,
-      ciomsData: event.data.ciomsData
-    }, (response) => {
-      console.log('[Content] Background response:', response);
-
-      // GitHub Pages로 응답 전송
-      window.postMessage({
-        type: 'MEDDRA_AUTOFILL_RESPONSE',
-        messageId: event.data.messageId,
-        success: response?.success || false,
-        message: response?.message || '',
-        error: response?.error || null
-      }, '*');
-    });
-  }
-});
+console.log('[MedDRA AutoFill] Autofill script loaded on MedDRA-DB');
 
 // 페이지 로드 완료 시 자동 실행
 if (document.readyState === 'loading') {
@@ -49,25 +19,25 @@ if (document.readyState === 'loading') {
 }
 
 async function init() {
-  console.log('[Content] Initializing...');
+  console.log('[AutoFill] Initializing...');
 
   // storage에서 CIOMS 데이터 확인
   const result = await chrome.storage.local.get(['pendingCiomsData', 'timestamp']);
 
   if (!result.pendingCiomsData) {
-    console.log('[Content] No pending CIOMS data found');
+    console.log('[AutoFill] No pending CIOMS data found');
     return;
   }
 
   // 데이터가 5분 이상 오래되었으면 무시
   const age = Date.now() - (result.timestamp || 0);
   if (age > 5 * 60 * 1000) {
-    console.log('[Content] CIOMS data too old, ignoring');
+    console.log('[AutoFill] CIOMS data too old, ignoring');
     await chrome.storage.local.remove(['pendingCiomsData', 'timestamp']);
     return;
   }
 
-  console.log('[Content] Found CIOMS data, starting autofill');
+  console.log('[AutoFill] Found CIOMS data, starting autofill');
 
   // 자동 입력 시작
   try {
@@ -77,7 +47,7 @@ async function init() {
     await chrome.storage.local.remove(['pendingCiomsData', 'timestamp']);
 
   } catch (error) {
-    console.error('[Content] Autofill failed:', error);
+    console.error('[AutoFill] Autofill failed:', error);
     alert(`자동 입력 실패: ${error.message}`);
   }
 }
