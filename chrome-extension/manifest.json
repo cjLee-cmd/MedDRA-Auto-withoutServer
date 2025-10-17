@@ -16,7 +16,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://cjlee-cmd.github.io/MedDRA/main.html"],
+      "matches": ["https://cjlee-cmd.github.io/MedDRA-Auto-withoutServer/main.html"],
       "js": ["bridge.js"],
       "run_at": "document_idle"
     },
