@@ -29,9 +29,9 @@ async function init() {
     return;
   }
 
-  // 데이터가 5분 이상 오래되었으면 무시
+  // 데이터가 30분 이상 오래되었으면 무시
   const age = Date.now() - (result.timestamp || 0);
-  if (age > 5 * 60 * 1000) {
+  if (age > 30 * 60 * 1000) {
     console.log('[AutoFill] CIOMS data too old, ignoring');
     await chrome.storage.local.remove(['pendingCiomsData', 'timestamp']);
     return;
