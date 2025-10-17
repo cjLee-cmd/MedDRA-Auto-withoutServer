@@ -1481,16 +1481,14 @@ async function performDBAutoFill(ciomsData) {
     showLoadingOverlay();
     updateLoadingOverlay('DB 자동 입력 중...', 0);
 
-    // Chrome 확장 프로그램 ID (설치 후 업데이트 필요)
-    const EXTENSION_ID = 'YOUR_EXTENSION_ID_HERE'; // TODO: 실제 확장 ID로 교체
-
     // Chrome 확장이 설치되어 있는지 확인
     if (typeof chrome === 'undefined' || !chrome.runtime) {
       hideLoadingOverlay();
       alert(
-        '❌ Chrome 확장 프로그램이 설치되지 않았습니다.\n\n' +
-        '1. chrome-extension 폴더를 Chrome에 로드하세요\n' +
-        '2. chrome://extensions/로 이동\n' +
+        '❌ Chrome 브라우저가 아니거나 확장이 설치되지 않았습니다.\n\n' +
+        '설치 방법:\n' +
+        '1. Chrome 브라우저를 사용하세요\n' +
+        '2. chrome://extensions/ 접속\n' +
         '3. "개발자 모드" 활성화\n' +
         '4. "압축해제된 확장 로드" 클릭\n' +
         '5. chrome-extension 폴더 선택'
@@ -1498,56 +1496,96 @@ async function performDBAutoFill(ciomsData) {
       return;
     }
 
-    // Chrome 확장에 메시지 전송
-    chrome.runtime.sendMessage(
-      EXTENSION_ID,
-      {
+    updateLoadingOverlay('Chrome 확장에 요청 전송 중...', 30);
+
+    // Chrome 확장에 메시지 전송 (externally_connectable 사용)
+    // manifest.json의 externally_connectable 설정으로 인해
+    // 확장 ID 없이도 통신 가능
+    let messageTimeout;
+    let responseSent = false;
+
+    // 타임아웃 설정 (10초)
+    const timeoutPromise = new Promise((_, reject) => {
+      messageTimeout = setTimeout(() => {
+        if (!responseSent) {
+          reject(new Error('Chrome 확장 응답 시간 초과 (10초)'));
+        }
+      }, 10000);
+    });
+
+    // 메시지 전송 Promise
+    const messagePromise = new Promise((resolve, reject) => {
+      // Chrome 확장 ID를 찾기 위한 방법
+      // window.postMessage를 사용하여 확장과 통신
+      const messageId = 'meddra-autofill-' + Date.now();
+
+      // 응답 리스너 등록
+      const responseListener = (event) => {
+        if (event.source !== window) return;
+        if (event.data.type === 'MEDDRA_AUTOFILL_RESPONSE' && event.data.messageId === messageId) {
+          responseSent = true;
+          clearTimeout(messageTimeout);
+          window.removeEventListener('message', responseListener);
+          resolve(event.data);
+        }
+      };
+
+      window.addEventListener('message', responseListener);
+
+      // 확장에 메시지 전송
+      window.postMessage({
+        type: 'MEDDRA_AUTOFILL_REQUEST',
+        messageId: messageId,
         action: 'dbAutofill',
         ciomsData: ciomsData
-      },
-      (response) => {
-        hideLoadingOverlay();
+      }, '*');
+    });
 
-        if (chrome.runtime.lastError) {
-          console.error('Chrome 확장 통신 오류:', chrome.runtime.lastError);
-          alert(
-            '❌ Chrome 확장과 통신할 수 없습니다.\n\n' +
-            `오류: ${chrome.runtime.lastError.message}\n\n` +
-            '확장이 올바르게 설치되어 있는지 확인해주세요.'
-          );
-          return;
-        }
+    updateLoadingOverlay('응답 대기 중...', 50);
 
-        if (response && response.success) {
-          alert(
-            '✅ DB 자동 입력 시작!\n\n' +
-            'MedDRA-DB 사이트가 새 탭에서 열렸습니다.\n' +
-            '자동으로 폼이 입력됩니다.\n\n' +
-            '자동 입력 데이터:\n' +
-            `- 환자 정보: ${ciomsData.환자_정보?.환자_이니셜 || 'N/A'}\n` +
-            `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}\n` +
-            `- 약물 수: ${ciomsData.의약품_정보?.약물_목록?.length || 0}`
-          );
-        } else {
-          alert(
-            '❌ DB 자동 입력 실패\n\n' +
-            `오류: ${response?.error || '알 수 없는 오류'}\n\n` +
-            'Chrome 확장이 올바르게 설치되어 있는지 확인해주세요.'
-          );
-        }
-      }
-    );
+    // Promise.race로 타임아웃 처리
+    const response = await Promise.race([messagePromise, timeoutPromise]);
 
-    updateLoadingOverlay('Chrome 확장에 요청 전송 중...', 50);
+    hideLoadingOverlay();
+
+    if (response && response.success) {
+      alert(
+        '✅ DB 자동 입력 시작!\n\n' +
+        'MedDRA-DB 사이트가 새 탭에서 열렸습니다.\n' +
+        '자동으로 폼이 입력됩니다.\n\n' +
+        '자동 입력 데이터:\n' +
+        `- 환자 정보: ${ciomsData.환자_정보?.환자_이니셜 || 'N/A'}\n` +
+        `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}\n` +
+        `- 약물 수: ${ciomsData.의약품_정보?.약물_목록?.length || 0}`
+      );
+    } else {
+      alert(
+        '❌ DB 자동 입력 실패\n\n' +
+        `오류: ${response?.error || '알 수 없는 오류'}\n\n` +
+        'Chrome 확장이 올바르게 설치되어 있는지 확인해주세요.'
+      );
+    }
 
   } catch (error) {
     hideLoadingOverlay();
     console.error('DB 자동 입력 오류:', error);
-    alert(
-      '❌ DB 자동 입력 실패\n\n' +
-      `오류: ${error.message}\n\n` +
-      'Chrome 확장이 설치되어 있는지 확인해주세요.'
-    );
+
+    let errorMessage = '❌ DB 자동 입력 실패\n\n';
+
+    if (error.message.includes('시간 초과')) {
+      errorMessage +=
+        '오류: Chrome 확장이 응답하지 않습니다.\n\n' +
+        '확인사항:\n' +
+        '1. Chrome 확장이 설치되어 있나요?\n' +
+        '2. chrome://extensions/에서 확장이 활성화되어 있나요?\n' +
+        '3. 페이지를 새로고침(Ctrl+F5)해 보세요.';
+    } else {
+      errorMessage +=
+        `오류: ${error.message}\n\n` +
+        'Chrome 확장이 설치되어 있는지 확인해주세요.';
+    }
+
+    alert(errorMessage);
     throw error;
   }
 }

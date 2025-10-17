@@ -13,6 +13,34 @@
 
 console.log('[MedDRA AutoFill] Content script loaded');
 
+// GitHub Pages와의 window.postMessage 통신 리스너
+window.addEventListener('message', (event) => {
+  // 같은 윈도우에서 온 메시지만 처리
+  if (event.source !== window) return;
+
+  // MEDDRA_AUTOFILL_REQUEST 메시지 처리
+  if (event.data.type === 'MEDDRA_AUTOFILL_REQUEST') {
+    console.log('[Content] Received postMessage request:', event.data);
+
+    // Background script로 메시지 전달
+    chrome.runtime.sendMessage({
+      action: event.data.action,
+      ciomsData: event.data.ciomsData
+    }, (response) => {
+      console.log('[Content] Background response:', response);
+
+      // GitHub Pages로 응답 전송
+      window.postMessage({
+        type: 'MEDDRA_AUTOFILL_RESPONSE',
+        messageId: event.data.messageId,
+        success: response?.success || false,
+        message: response?.message || '',
+        error: response?.error || null
+      }, '*');
+    });
+  }
+});
+
 // 페이지 로드 완료 시 자동 실행
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
