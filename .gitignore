@@ -87,3 +87,9 @@ Thumbs.db
 
 # Archived files
 archived_files/
+
+# Playwright MCP test artifacts
+.playwright-mcp/
+
+# Separate git repositories
+Acuzen_Auto_v2/
