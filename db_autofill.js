@@ -30,11 +30,11 @@ async function dbAutoFill(providedCiomsData = null) {
 
   const browser = await chromium.launch({
     headless: false,
-    slowMo: 500 // 동작을 천천히 실행하여 관찰 가능하게 함
+    slowMo: 300 // 동작을 약간 천천히 실행하여 관찰 가능하게 함
   });
 
   const context = await browser.newContext({
-    viewport: { width: 960, height: 1000 }
+    viewport: { width: 1200, height: 1000 }
   });
 
   // MedDRA-DB 사이트용 페이지 먼저 생성
@@ -46,13 +46,110 @@ async function dbAutoFill(providedCiomsData = null) {
     await newPage.close();
   });
 
+  // 페이지에 진행 상황 표시 함수 주입
+  async function showProgress(message, step, total) {
+    await page.evaluate(({msg, s, t}) => {
+      let overlay = document.getElementById('autofill-progress-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'autofill-progress-overlay';
+        overlay.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.85);
+          z-index: 99999;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+        `;
+        document.body.appendChild(overlay);
+      }
+
+      const percentage = Math.round((s / t) * 100);
+
+      overlay.innerHTML = `
+        <div style="
+          background: white;
+          border-radius: 12px;
+          padding: 40px 60px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+          max-width: 500px;
+          text-align: center;
+        ">
+          <div style="
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: spin 2s linear infinite;
+          ">⟳</div>
+          <h2 style="
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: #2563eb;
+          ">자동 입력 진행 중...</h2>
+          <p style="
+            margin: 0 0 20px 0;
+            font-size: 16px;
+            color: #64748b;
+          ">${msg}</p>
+          <div style="
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+          ">
+            <div style="
+              width: ${percentage}%;
+              height: 100%;
+              background: linear-gradient(90deg, #3b82f6, #2563eb);
+              transition: width 0.3s ease;
+            "></div>
+          </div>
+          <p style="
+            margin: 0;
+            font-size: 14px;
+            color: #94a3b8;
+          ">${s} / ${t} 단계 (${percentage}%)</p>
+        </div>
+        <style>
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      `;
+    }, {msg: message, s: step, t: total});
+
+    console.log(`[${step}/${total}] ${message}`);
+  }
+
+  async function hideProgress() {
+    await page.evaluate(() => {
+      const overlay = document.getElementById('autofill-progress-overlay');
+      if (overlay) {
+        overlay.remove();
+      }
+    });
+  }
+
   try {
+    const totalSteps = 7; // 총 단계 수
+    let currentStep = 0;
+
     // Step 1: MedDRA-DB 사이트 접속
-    console.log('📄 MedDRA-DB 사이트 접속...');
+    currentStep++;
+    await showProgress('MedDRA-DB 사이트 접속 중...', currentStep, totalSteps);
     await page.goto('https://cjlee-cmd.github.io/MedDRA-DB/');
 
     // 데이터베이스 로딩 팝업이 사라질 때까지 대기
-    console.log('  → 데이터베이스 로딩 대기 중...');
+    currentStep++;
+    await showProgress('데이터베이스 로딩 대기 중...', currentStep, totalSteps);
     try {
       // "데이터베이스를 열고 있습니다" 오버레이가 사라질 때까지 대기 (최대 30초)
       await page.waitForSelector('.loading-overlay', { state: 'hidden', timeout: 30000 });
@@ -60,10 +157,12 @@ async function dbAutoFill(providedCiomsData = null) {
     } catch (timeoutError) {
       console.log('  ⚠️ 로딩 오버레이 타임아웃 (계속 진행)');
     }
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
 
-    // Step 2: 로그인
-    console.log('🔐 로그인 중...');
+    // Step 3: 로그인
+    currentStep++;
+    await showProgress('로그인 중...', currentStep, totalSteps);
+
     const usernameInput = await page.locator('input[type="text"], input[name*="user"], input[id*="user"]').first();
     const passwordInput = await page.locator('input[type="password"]').first();
 
@@ -83,25 +182,28 @@ async function dbAutoFill(providedCiomsData = null) {
       console.log('  ✓ 로그인 버튼 클릭');
     }
 
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(2000);
 
-    // Step 3: '새 폼 추가' 링크 클릭하여 form-edit.html로 이동
-    console.log('\n📝 새 폼 작성 페이지로 이동...');
+    // Step 4: '새 폼 추가' 링크 클릭하여 form-edit.html로 이동
+    currentStep++;
+    await showProgress('새 폼 작성 페이지로 이동 중...', currentStep, totalSteps);
+
     const newFormLink = await page.locator('a[href="form-edit.html"], a:has-text("새 폼 추가")').first();
 
     if (await newFormLink.isVisible()) {
       await newFormLink.click();
       console.log('  ✓ 새 폼 추가 링크 클릭');
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(1500);
     } else {
       // 직접 URL로 이동
       await page.goto('https://cjlee-cmd.github.io/MedDRA-DB/form-edit.html');
       console.log('  ✓ form-edit.html로 직접 이동');
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(1500);
     }
 
-    // Step 4: 폼 필드에 데이터 입력
-    console.log('\n📋 폼 필드 입력 중...\n');
+    // Step 5: 폼 필드에 데이터 입력
+    currentStep++;
+    await showProgress('기본 정보 입력 중...', currentStep, totalSteps);
 
     // CIOMS 데이터가 있으면 사용, 없으면 샘플 데이터 사용
     let formData;
@@ -198,9 +300,10 @@ async function dbAutoFill(providedCiomsData = null) {
       }
     }
 
-    // Step 4.5: 여러 반응 입력 처리
+    // Step 6: 여러 반응 입력 처리
     if (formData.reactions && formData.reactions.length > 0) {
-      console.log('\n📋 반응 정보 입력 중...\n');
+      currentStep++;
+      await showProgress(`유해 반응 ${formData.reactions.length}개 입력 중...`, currentStep, totalSteps);
 
       for (let i = 0; i < formData.reactions.length; i++) {
         const reaction = formData.reactions[i];
@@ -214,7 +317,7 @@ async function dbAutoFill(providedCiomsData = null) {
           const addButton = await page.locator('button:has-text("+ 부작용 추가")').first();
           if (await addButton.isVisible()) {
             await addButton.click();
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(400);
           }
         }
 
@@ -232,23 +335,86 @@ async function dbAutoFill(providedCiomsData = null) {
           console.log(`    ✓ 한글: ${reaction.ko || 'N/A'}`);
         }
 
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(200);
       }
 
       console.log(`\n  ✅ 총 ${formData.reactions.length}개 반응 입력 완료\n`);
     }
 
-    // Step 5: 저장 버튼 클릭
-    console.log('\n💾 저장 중...');
+    // Step 7: 저장 버튼 클릭
+    currentStep++;
+    await showProgress('데이터 저장 중...', currentStep, totalSteps);
+
     const saveButton = await page.locator('button:has-text("저장")').last(); // "임시 저장"이 아닌 "저장" 버튼
 
     if (await saveButton.isVisible()) {
       await saveButton.click();
       console.log('  ✓ 저장 버튼 클릭');
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(2000);
     } else {
       console.log('  ⚠️ 저장 버튼을 찾을 수 없습니다');
     }
+
+    // 진행 상황 오버레이 제거
+    await hideProgress();
+
+    // 완료 메시지 표시
+    await page.evaluate(() => {
+      const successOverlay = document.createElement('div');
+      successOverlay.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 99999;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        animation: slideIn 0.3s ease-out;
+      `;
+      successOverlay.innerHTML = '✅ 자동 입력 완료!';
+      document.body.appendChild(successOverlay);
+
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+
+      // 5초 후 자동으로 제거
+      setTimeout(() => {
+        successOverlay.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => successOverlay.remove(), 300);
+      }, 5000);
+
+      const slideOutStyle = document.createElement('style');
+      slideOutStyle.textContent = `
+        @keyframes slideOut {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(slideOutStyle);
+    });
 
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('✅ DB 자동 입력 완료!');
@@ -273,40 +439,84 @@ async function dbAutoFill(providedCiomsData = null) {
 function mapCiomsDataToFormFields(ciomsData) {
   const formData = {};
 
-  // 기본 정보
-  const basicInfo = ciomsData.기본_정보 || {};
-  formData.manufacturer_control_no = basicInfo.제조업체_관리번호 || '';
-  formData.date_received = basicInfo.접수일 || formatDate(new Date());
+  // 보고서 정보 (Report_Type, Manufacturer_Control_No, Date_Received_by_Manufacturer)
+  const reportInfo = ciomsData.보고서_정보 || {};
+  formData.manufacturer_control_no = reportInfo.Manufacturer_Control_No || '';
 
-  // 환자 정보
+  // 날짜 형식 변환 (DD/MM/YYYY → YYYY-MM-DD)
+  const dateReceived = reportInfo.Date_Received_by_Manufacturer || '';
+  if (dateReceived && dateReceived.includes('/')) {
+    const [day, month, year] = dateReceived.split('/');
+    formData.date_received = `${year}-${month}-${day}`;
+  } else {
+    formData.date_received = dateReceived || formatDate(new Date());
+  }
+
+  // 환자 정보 (Initials, Country, Age, Sex)
   const patientInfo = ciomsData.환자_정보 || {};
-  formData.patient_initials = patientInfo.환자_이니셜 || '';
-  formData.patient_country = patientInfo.국가 || 'KR';
-  formData.patient_age = patientInfo.나이 || '';
-  formData.patient_sex = patientInfo.성별 || ''; // M, F, U
+  formData.patient_initials = patientInfo.Initials || '';
+  formData.patient_country = patientInfo.Country || 'KR';
 
-  // 유해 반응 정보 (모든 반응 처리)
+  // 나이 처리 (예: "62 Years" → "62")
+  const age = patientInfo.Age || '';
+  formData.patient_age = age.replace(/\s*Years?/i, '').trim();
+
+  formData.patient_sex = patientInfo.Sex || ''; // M, F, U
+
+  // 유해 반응 정보 (Adverse_Reactions)
   const reactions = ciomsData.반응_정보?.Adverse_Reactions || [];
   formData.reactions = reactions.map(reaction => ({
-    en: reaction.영어 || reaction.korean || '',
-    ko: reaction.korean || reaction.영어 || ''
+    en: reaction.english || reaction.korean || '',
+    ko: reaction.korean || reaction.english || ''
   }));
 
-  // 의약품 정보 (첫 번째 약물만 사용)
-  const drugs = ciomsData.의약품_정보?.약물_목록 || [];
-  if (drugs.length > 0) {
-    const firstDrug = drugs[0];
-    formData.drug_name_en_1 = firstDrug.약물명_영어 || firstDrug.약물명 || '';
-    formData.drug_name_ko_1 = firstDrug.약물명 || firstDrug.약물명_영어 || '';
-    formData.indication_en_1 = firstDrug.적응증_영어 || firstDrug.적응증 || '';
-    formData.indication_ko_1 = firstDrug.적응증 || firstDrug.적응증_영어 || '';
+  // 의심 약물 정보 (의심_약물_정보)
+  const suspectedDrugs = ciomsData.의심_약물_정보 || [];
+  if (suspectedDrugs.length > 0) {
+    suspectedDrugs.forEach((drug, index) => {
+      const drugNum = index + 1;
 
-    // 의심 약물 여부 (S: Suspected, C: Concomitant)
-    formData.is_suspected_1 = firstDrug.의심약물 === true ? 'S' : 'C';
+      // drug_name은 객체 형태 {english, korean}
+      if (drug.drug_name) {
+        formData[`drug_name_en_${drugNum}`] = drug.drug_name.english || '';
+        formData[`drug_name_ko_${drugNum}`] = drug.drug_name.korean || '';
+      }
+
+      // indication도 객체 형태 {english, korean}
+      if (drug.indication) {
+        formData[`indication_en_${drugNum}`] = drug.indication.english || '';
+        formData[`indication_ko_${drugNum}`] = drug.indication.korean || '';
+      }
+
+      // 의심 약물은 항상 'S' (Suspected)
+      formData[`is_suspected_${drugNum}`] = 'S';
+    });
+  }
+
+  // 병용 약물 정보 (병용_약물_정보)
+  const concomitantDrugs = ciomsData.병용_약물_정보 || [];
+  if (concomitantDrugs.length > 0) {
+    const startIndex = suspectedDrugs.length + 1;
+    concomitantDrugs.forEach((drug, index) => {
+      const drugNum = startIndex + index;
+
+      if (drug.drug_name) {
+        formData[`drug_name_en_${drugNum}`] = drug.drug_name.english || '';
+        formData[`drug_name_ko_${drugNum}`] = drug.drug_name.korean || '';
+      }
+
+      if (drug.indication) {
+        formData[`indication_en_${drugNum}`] = drug.indication.english || '';
+        formData[`indication_ko_${drugNum}`] = drug.indication.korean || '';
+      }
+
+      // 병용 약물은 항상 'C' (Concomitant)
+      formData[`is_suspected_${drugNum}`] = 'C';
+    });
   }
 
   // 인과성 평가 정보
-  const causality = ciomsData.인과성_평가 || {};
+  const causality = ciomsData.인과관계_평가 || {};
   formData.causality_method = causality.평가방법 || 'WHO-UMC';
   formData.causality_category = causality.평가결과 || '';
   formData.causality_reason = causality.평가근거 || '';

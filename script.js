@@ -1456,16 +1456,8 @@ if (dbAutofillButton) {
       return;
     }
 
-    // 확인 메시지
-    const confirmed = confirm(
-      'MedDRA-DB 사이트에 CIOMS 데이터를 자동으로 입력하시겠습니까?\n\n' +
-      '브라우저 창이 열리고 자동으로 폼이 작성됩니다.'
-    );
-
-    if (!confirmed) return;
-
     try {
-      // Playwright MCP를 통해 자동 입력 수행
+      // 사용자 확인 없이 바로 자동 입력 수행
       await performDBAutoFill(autoSearchState.ciomsData);
     } catch (error) {
       console.error('DB 자동 입력 오류:', error);
