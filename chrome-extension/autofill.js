@@ -263,38 +263,38 @@ async function saveForm() {
 function mapCiomsDataToFormFields(ciomsData) {
   const formData = {};
 
-  // 기본 정보
-  const basicInfo = ciomsData.기본_정보 || {};
-  formData.manufacturer_control_no = basicInfo.제조업체_관리번호 || '';
-  formData.date_received = basicInfo.접수일 || formatDate(new Date());
+  // 보고서 정보 (기본 정보)
+  const reportInfo = ciomsData.보고서_정보 || {};
+  formData.manufacturer_control_no = reportInfo.Manufacturer_Control_No || '';
+  formData.date_received = reportInfo.Date_Received_by_Manufacturer || formatDate(new Date());
 
   // 환자 정보
   const patientInfo = ciomsData.환자_정보 || {};
-  formData.patient_initials = patientInfo.환자_이니셜 || '';
-  formData.patient_country = patientInfo.국가 || 'KR';
-  formData.patient_age = patientInfo.나이 || '';
-  formData.patient_sex = patientInfo.성별 || '';
+  formData.patient_initials = patientInfo.Initials || '';
+  formData.patient_country = patientInfo.Country || 'KR';
+  formData.patient_age = patientInfo.Age || '';
+  formData.patient_sex = patientInfo.Sex || '';
 
   // 유해 반응 정보
   const reactions = ciomsData.반응_정보?.Adverse_Reactions || [];
   formData.reactions = reactions.map(reaction => ({
-    en: reaction.영어 || reaction.korean || '',
-    ko: reaction.korean || reaction.영어 || ''
+    en: reaction.english || '',
+    ko: reaction.korean || ''
   }));
 
-  // 의약품 정보
-  const drugs = ciomsData.의약품_정보?.약물_목록 || [];
+  // 의심 약물 정보
+  const drugs = ciomsData.의심_약물_정보 || [];
   if (drugs.length > 0) {
     const firstDrug = drugs[0];
-    formData.drug_name_en_1 = firstDrug.약물명_영어 || firstDrug.약물명 || '';
-    formData.drug_name_ko_1 = firstDrug.약물명 || firstDrug.약물명_영어 || '';
-    formData.indication_en_1 = firstDrug.적응증_영어 || firstDrug.적응증 || '';
-    formData.indication_ko_1 = firstDrug.적응증 || firstDrug.적응증_영어 || '';
-    formData.is_suspected_1 = firstDrug.의심약물 === true ? 'S' : 'C';
+    formData.drug_name_en_1 = firstDrug.drug_name?.english || '';
+    formData.drug_name_ko_1 = firstDrug.drug_name?.korean || '';
+    formData.indication_en_1 = firstDrug.indication?.english || '';
+    formData.indication_ko_1 = firstDrug.indication?.korean || '';
+    formData.is_suspected_1 = 'S';  // 의심 약물이므로 항상 S
   }
 
-  // 인과성 평가
-  const causality = ciomsData.인과성_평가 || {};
+  // 인과관계 평가
+  const causality = ciomsData.인과관계_평가 || {};
   formData.causality_method = causality.평가방법 || 'WHO-UMC';
   formData.causality_category = causality.평가결과 || '';
   formData.causality_reason = causality.평가근거 || '';
