@@ -1474,115 +1474,65 @@ if (dbAutofillButton) {
   });
 }
 
-// DB 자동 입력 수행 함수
+// DB 자동 입력 수행 함수 (GitHub Pages 간 직접 전송)
 async function performDBAutoFill(ciomsData) {
   try {
-    // 로딩 표시
-    showLoadingOverlay();
-    updateLoadingOverlay('DB 자동 입력 중...', 0);
+    // 로딩 표시 시작
+    showLoadingOverlay('DB 자동 입력 준비 중...', 20);
 
-    // Chrome 확장이 설치되어 있는지 확인
-    if (typeof chrome === 'undefined' || !chrome.runtime) {
-      hideLoadingOverlay();
-      alert(
-        '❌ Chrome 브라우저가 아니거나 확장이 설치되지 않았습니다.\n\n' +
-        '설치 방법:\n' +
-        '1. Chrome 브라우저를 사용하세요\n' +
-        '2. chrome://extensions/ 접속\n' +
-        '3. "개발자 모드" 활성화\n' +
-        '4. "압축해제된 확장 로드" 클릭\n' +
-        '5. chrome-extension 폴더 선택'
-      );
-      return;
+    // CIOMS 데이터를 sessionStorage에 저장
+    updateLoadingOverlay('데이터 준비 중...', 40);
+    const dataKey = 'cioms_data_transfer';
+    const transferData = {
+      timestamp: Date.now(),
+      data: ciomsData
+    };
+
+    try {
+      sessionStorage.setItem(dataKey, JSON.stringify(transferData));
+    } catch (storageError) {
+      console.error('sessionStorage 저장 실패:', storageError);
+      throw new Error('데이터 저장 실패: 브라우저 저장 공간이 부족합니다');
     }
 
-    updateLoadingOverlay('Chrome 확장에 요청 전송 중...', 30);
+    updateLoadingOverlay('MedDRA-DB 사이트 열기...', 60);
 
-    // Chrome 확장에 메시지 전송 (externally_connectable 사용)
-    // manifest.json의 externally_connectable 설정으로 인해
-    // 확장 ID 없이도 통신 가능
-    let messageTimeout;
-    let responseSent = false;
+    // MedDRA-DB 사이트를 새 창으로 열기
+    const dbUrl = 'https://cjlee-cmd.github.io/MedDRA-DB/form-edit.html';
+    const dbWindow = window.open(dbUrl, '_blank');
 
-    // 타임아웃 설정 (10초)
-    const timeoutPromise = new Promise((_, reject) => {
-      messageTimeout = setTimeout(() => {
-        if (!responseSent) {
-          reject(new Error('Chrome 확장 응답 시간 초과 (10초)'));
-        }
-      }, 10000);
-    });
+    if (!dbWindow) {
+      throw new Error('팝업 차단: 브라우저에서 팝업을 허용해주세요');
+    }
 
-    // 메시지 전송 Promise
-    const messagePromise = new Promise((resolve, reject) => {
-      // Chrome 확장 ID를 찾기 위한 방법
-      // window.postMessage를 사용하여 확장과 통신
-      const messageId = 'meddra-autofill-' + Date.now();
-
-      // 응답 리스너 등록
-      const responseListener = (event) => {
-        if (event.source !== window) return;
-        if (event.data.type === 'MEDDRA_AUTOFILL_RESPONSE' && event.data.messageId === messageId) {
-          responseSent = true;
-          clearTimeout(messageTimeout);
-          window.removeEventListener('message', responseListener);
-          resolve(event.data);
-        }
-      };
-
-      window.addEventListener('message', responseListener);
-
-      // 확장에 메시지 전송
-      window.postMessage({
-        type: 'MEDDRA_AUTOFILL_REQUEST',
-        messageId: messageId,
-        action: 'dbAutofill',
-        ciomsData: ciomsData
-      }, '*');
-    });
-
-    updateLoadingOverlay('응답 대기 중...', 50);
-
-    // Promise.race로 타임아웃 처리
-    const response = await Promise.race([messagePromise, timeoutPromise]);
-
+    updateLoadingOverlay('완료!', 100);
+    await sleep(500);
     hideLoadingOverlay();
 
-    if (response && response.success) {
-      alert(
-        '✅ DB 자동 입력 시작!\n\n' +
-        'MedDRA-DB 사이트가 새 탭에서 열렸습니다.\n' +
-        '자동으로 폼이 입력됩니다.\n\n' +
-        '자동 입력 데이터:\n' +
-        `- 환자 정보: ${ciomsData.환자_정보?.환자_이니셜 || 'N/A'}\n` +
-        `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}\n` +
-        `- 약물 수: ${ciomsData.의약품_정보?.약물_목록?.length || 0}`
-      );
-    } else {
-      alert(
-        '❌ DB 자동 입력 실패\n\n' +
-        `오류: ${response?.error || '알 수 없는 오류'}\n\n` +
-        'Chrome 확장이 올바르게 설치되어 있는지 확인해주세요.'
-      );
-    }
+    alert(
+      '✅ DB 자동 입력 시작!\n\n' +
+      'MedDRA-DB 사이트가 새 브라우저 탭에서 열렸습니다.\n' +
+      '자동으로 폼이 입력됩니다.\n\n' +
+      '입력 데이터:\n' +
+      `- 제조업체 관리번호: ${ciomsData.보고서_정보?.Manufacturer_Control_No || 'N/A'}\n` +
+      `- 환자 정보: ${ciomsData.환자_정보?.Initials || 'N/A'}, ${ciomsData.환자_정보?.Country || 'N/A'}\n` +
+      `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}개\n` +
+      `- 의심 약물 수: ${ciomsData.의심_약물_정보?.length || 0}개\n\n` +
+      '💡 새 탭에서 자동으로 폼이 작성됩니다.\n' +
+      '   입력이 완료되면 확인 메시지가 표시됩니다.'
+    );
 
   } catch (error) {
     hideLoadingOverlay();
     console.error('DB 자동 입력 오류:', error);
 
-    let errorMessage = '❌ DB 자동 입력 실패\n\n';
+    let errorMessage = '❌ DB 자동 입력 중 오류 발생\n\n';
+    errorMessage += `오류: ${error.message}\n\n`;
 
-    if (error.message.includes('시간 초과')) {
-      errorMessage +=
-        '오류: Chrome 확장이 응답하지 않습니다.\n\n' +
-        '확인사항:\n' +
-        '1. Chrome 확장이 설치되어 있나요?\n' +
-        '2. chrome://extensions/에서 확장이 활성화되어 있나요?\n' +
-        '3. 페이지를 새로고침(Ctrl+F5)해 보세요.';
-    } else {
-      errorMessage +=
-        `오류: ${error.message}\n\n` +
-        'Chrome 확장이 설치되어 있는지 확인해주세요.';
+    if (error.message.includes('팝업 차단')) {
+      errorMessage += '브라우저 설정에서 팝업을 허용해주세요.';
+    } else if (error.message.includes('저장 공간')) {
+      errorMessage += '브라우저 저장 공간을 확인하고 불필요한 데이터를 삭제해주세요.';
     }
 
     alert(errorMessage);
