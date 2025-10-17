@@ -1501,19 +1501,6 @@ async function performDBAutoFill(ciomsData) {
     await sleep(500);
     hideLoadingOverlay();
 
-    alert(
-      '✅ DB 자동 입력 시작!\n\n' +
-      'MedDRA-DB 사이트가 새 브라우저 탭에서 열렸습니다.\n' +
-      '자동으로 폼이 입력됩니다.\n\n' +
-      '입력 데이터:\n' +
-      `- 제조업체 관리번호: ${ciomsData.보고서_정보?.Manufacturer_Control_No || 'N/A'}\n` +
-      `- 환자 정보: ${ciomsData.환자_정보?.Initials || 'N/A'}, ${ciomsData.환자_정보?.Country || 'N/A'}\n` +
-      `- 유해 반응 수: ${ciomsData.반응_정보?.Adverse_Reactions?.length || 0}개\n` +
-      `- 의심 약물 수: ${ciomsData.의심_약물_정보?.length || 0}개\n\n` +
-      '💡 새 탭에서 자동으로 폼이 작성됩니다.\n' +
-      '   입력이 완료되면 확인 메시지가 표시됩니다.'
-    );
-
   } catch (error) {
     hideLoadingOverlay();
     console.error('DB 자동 입력 오류:', error);
