@@ -358,64 +358,6 @@ async function dbAutoFill(providedCiomsData = null) {
     // 진행 상황 오버레이 제거
     await hideProgress();
 
-    // 완료 메시지 표시
-    await page.evaluate(() => {
-      const successOverlay = document.createElement('div');
-      successOverlay.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        padding: 20px 30px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        z-index: 99999;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-        font-size: 16px;
-        font-weight: 600;
-        animation: slideIn 0.3s ease-out;
-      `;
-      successOverlay.innerHTML = '✅ 자동 입력 완료!';
-      document.body.appendChild(successOverlay);
-
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes slideIn {
-          from {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-
-      // 5초 후 자동으로 제거
-      setTimeout(() => {
-        successOverlay.style.animation = 'slideOut 0.3s ease-in';
-        setTimeout(() => successOverlay.remove(), 300);
-      }, 5000);
-
-      const slideOutStyle = document.createElement('style');
-      slideOutStyle.textContent = `
-        @keyframes slideOut {
-          from {
-            transform: translateX(0);
-            opacity: 1;
-          }
-          to {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-        }
-      `;
-      document.head.appendChild(slideOutStyle);
-    });
-
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('✅ DB 자동 입력 완료!');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
